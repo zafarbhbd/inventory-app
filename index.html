@@ -165,6 +165,42 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
 .toast.hidden{opacity:0;pointer-events:none;}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+
+/* MOBILE */
+@media(max-width:768px){
+  .sidebar{width:100%;min-height:auto;position:relative;flex-direction:row;flex-wrap:wrap;}
+  .nav{display:flex;flex-wrap:wrap;padding:6px;}
+  .nav-sec{display:none;}
+  .nav-item{padding:7px 10px;font-size:12px;}
+  .main{margin-left:0;padding:16px;}
+  .cards{grid-template-columns:1fr 1fr;}
+  .grid2{grid-template-columns:1fr;}
+  .grid2f{grid-template-columns:1fr;}
+  .s-footer{width:100%;}
+  table{font-size:11px;}
+  thead th,tbody td{padding:7px 8px;}
+}
+@media(max-width:480px){
+  .cards{grid-template-columns:1fr;}
+  .toolbar{flex-direction:column;align-items:stretch;}
+  .search-input{width:100%;}
+}
+/* PRINT */
+@media print{
+  .sidebar,.toolbar,.act-btns,.modal-overlay,.toast{display:none!important;}
+  .main{margin-left:0;padding:0;}
+  body{background:#fff;color:#000;}
+  .card{border:1px solid #ccc;background:#fff;}
+  .card-val{color:#000!important;}
+  thead th{background:#f0f0f0;color:#333;}
+  tbody td{color:#333;}
+  .tbox{border:1px solid #ccc;}
+}
+/* SYNC INDICATOR */
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block;margin-right:6px;}
+.sync-dot.syncing{background:var(--warning);animation:pulse .8s infinite;}
+.sync-dot.error{background:var(--danger);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 </style>
 </head>
 <body>
@@ -210,6 +246,13 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
       <div class="nav-item" id="usersNav" onclick="showPage('users',this)"><span class="ni">🔐</span>Manage Users</div>
     </div>
     <div class="s-footer">
+      <div style="padding:8px 12px 10px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">
+        <span class="sync-dot" id="syncDot"></span><span id="syncStatus">Connected</span>
+      </div>
+      <button class="logout-btn" style="color:var(--text2);margin-bottom:2px" onclick="exportExcel()">📥 Export to Excel</button>
+      <button class="logout-btn" style="color:var(--text2);margin-bottom:2px" onclick="backupData()">💾 Backup Data</button>
+      <label class="logout-btn" style="color:var(--text2);margin-bottom:2px;cursor:pointer">📂 Restore Backup<input type="file" accept=".json" style="display:none" onchange="restoreData(event)"></label>
+      <button class="logout-btn" style="color:var(--text2);margin-bottom:6px" onclick="window.print()">🖨️ Print Dashboard</button>
       <button class="logout-btn" onclick="doLogout()">🚪 Sign Out</button>
     </div>
   </div>
@@ -1089,6 +1132,102 @@ function saveUser(){
 function deleteUser(id,name){
   if(id===currentUser?.id){showToast("Can't delete yourself",'err');return;}
   confirmDelete(`Delete user "${name}"?`,()=>{DB.users=DB.users.filter(u=>u.id!==id);saveDB();renderUsers();showToast('User deleted');});
+}
+
+
+// ─────────────────────────────────────
+//  SYNC INDICATOR
+// ─────────────────────────────────────
+function setSyncStatus(state){
+  const dot=document.getElementById('syncDot');
+  const lbl=document.getElementById('syncStatus');
+  if(!dot||!lbl)return;
+  dot.className='sync-dot'+( state==='syncing'?' syncing':state==='error'?' error':'');
+  lbl.textContent=state==='syncing'?'Saving…':state==='error'?'Save failed':'Saved ✓';
+}
+const _origSaveDB = saveDB;
+window.saveDB = async function(){
+  setSyncStatus('syncing');
+  try{ await _origSaveDB(); setSyncStatus('ok'); }
+  catch(e){ setSyncStatus('error'); }
+};
+
+// ─────────────────────────────────────
+//  EXPORT TO EXCEL (CSV)
+// ─────────────────────────────────────
+function exportExcel(){
+  const sheets = {
+    Products: {
+      headers: ['HSN Code','Product Name','Cost','Selling Price'],
+      rows: DB.products.map(p=>[p.hsn, p.name, p.cost, p.price])
+    },
+    Vendors: {
+      headers: ['HSN Code','Product','Vendor Name','Phone','Address'],
+      rows: DB.vendors.map(v=>[v.hsn, v.product, v.name, v.phone, v.address])
+    },
+    Customers: {
+      headers: ['Customer ID','Name','Email','Address'],
+      rows: DB.customers.map(c=>[c.custId, c.name, c.email, c.address])
+    },
+    Purchases: {
+      headers: ['HSN','Product','Vendor','Date','Units','Cost','Amount'],
+      rows: DB.purchases.map(p=>[p.hsn, p.product, p.vendor, p.date, p.units, p.cost, p.amount])
+    },
+    Sales: {
+      headers: ['Customer','HSN','Product','Date','Units','Price','Amount'],
+      rows: DB.sales.map(s=>[s.customer, s.hsn, s.product, s.date, s.units, s.price, s.amount])
+    },
+    Inventory: {
+      headers: ['HSN','Product','Cost','Purchased','Sold','Stock','Stock Value','Status'],
+      rows: (()=>{
+        const inv=getInvMap();
+        return Object.entries(inv).map(([hsn,i])=>[hsn, i.name, i.cost, i.purchased, i.sold, i.stock, i.stockAmt, i.stock<=0?'Out of Stock':i.stock<=5?'Low Stock':'In Stock']);
+      })()
+    }
+  };
+  let csv = '';
+  Object.entries(sheets).forEach(([name, sheet])=>{
+    csv += '
+=== ' + name + ' ===
+';
+    csv += sheet.headers.join(',') + '
+';
+    sheet.rows.forEach(r=>{ csv += r.map(v=>'"'+(String(v||'').replace(/"/g,'""'))+'"').join(',') + '
+'; });
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'InvenTrack_Export_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  showToast('Exported successfully');
+}
+
+// ─────────────────────────────────────
+//  BACKUP & RESTORE
+// ─────────────────────────────────────
+function backupData(){
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'InvenTrack_Backup_' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  showToast('Backup downloaded');
+}
+function restoreData(e){
+  const file = e.target.files[0]; if(!file)return;
+  const reader = new FileReader();
+  reader.onload = async function(ev){
+    try{
+      const data = JSON.parse(ev.target.result);
+      if(!data.products||!data.sales){showToast('Invalid backup file','err');return;}
+      DB = data;
+      await saveDB();
+      showToast('Backup restored successfully');
+      renderDashboard();
+    }catch(err){ showToast('Could not read file','err'); }
+  };
+  reader.readAsText(file);
 }
 
 // ─────────────────────────────────────
