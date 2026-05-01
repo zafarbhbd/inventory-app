@@ -572,16 +572,59 @@ const SEED = {
 };
 
 // ─────────────────────────────────────
-//  STATE & STORAGE
+//  STATE & STORAGE (JSONBin Cloud)
 // ─────────────────────────────────────
 let DB = {};
 let currentUser = null;
+let BIN_ID = localStorage.getItem('inventrackBinId') || null;
+const API_KEY = '$2a$10$8UOkhnBXlo4K11zxqsnnOORzWK0YEMbTGqK7cxKzllgeRpsMpNgUa';
+const BIN_API = 'https://api.jsonbin.io/v3/b';
 
-function loadDB(){
-  try{ DB = JSON.parse(localStorage.getItem('inventrackDB')) || null; }catch(e){ DB=null; }
-  if(!DB){ DB = JSON.parse(JSON.stringify(SEED)); saveDB(); }
+function showLoader(msg){
+  let el=document.getElementById('globalLoader');
+  if(!el){
+    el=document.createElement('div');
+    el.id='globalLoader';
+    el.style.cssText='position:fixed;inset:0;background:#0d0f14ee;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Syne,sans-serif;';
+    el.innerHTML='<div style="font-size:28px;font-weight:800;color:#f0c040;margin-bottom:12px">InvenTrack</div><div id="loaderMsg" style="color:#8b90a0;font-size:14px"></div><div style="margin-top:20px;width:40px;height:40px;border:3px solid #2a2f3d;border-top-color:#f0c040;border-radius:50%;animation:spin .8s linear infinite"></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+    document.body.appendChild(el);
+  }
+  document.getElementById('loaderMsg').textContent=msg||'Loading…';
+  el.style.display='flex';
 }
-function saveDB(){ localStorage.setItem('inventrackDB', JSON.stringify(DB)); }
+function hideLoader(){ const el=document.getElementById('globalLoader'); if(el) el.style.display='none'; }
+
+async function loadDB(){
+  showLoader('Connecting to cloud database…');
+  try{
+    if(BIN_ID){
+      showLoader('Loading your data…');
+      const res=await fetch(`${BIN_API}/${BIN_ID}/latest`,{headers:{'X-Master-Key':API_KEY}});
+      if(res.ok){ const json=await res.json(); DB=json.record; hideLoader(); return; }
+    }
+    // No bin yet — create one with seed data
+    showLoader('Setting up your database for the first time…');
+    DB=JSON.parse(JSON.stringify(SEED));
+    const res=await fetch(BIN_API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Master-Key':API_KEY,'X-Bin-Name':'inventrackDB'},
+      body:JSON.stringify(DB)
+    });
+    if(res.ok){ const json=await res.json(); BIN_ID=json.metadata.id; localStorage.setItem('inventrackBinId',BIN_ID); }
+  }catch(e){ console.error(e); DB=JSON.parse(JSON.stringify(SEED)); }
+  hideLoader();
+}
+
+async function saveDB(){
+  if(!BIN_ID){ console.warn('No bin ID'); return; }
+  try{
+    await fetch(`${BIN_API}/${BIN_ID}`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},
+      body:JSON.stringify(DB)
+    });
+  }catch(e){ console.error('Save failed',e); showToast('Cloud save failed — check connection','err'); }
+}
 function uid(){ return 'id_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); }
 function fmt(n){ return Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2}); }
 
@@ -1051,7 +1094,7 @@ function deleteUser(id,name){
 // ─────────────────────────────────────
 //  BOOT
 // ─────────────────────────────────────
-loadDB();
+(async()=>{ await loadDB(); })();
 </script>
 </body>
 </html>
