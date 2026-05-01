@@ -620,7 +620,8 @@ const SEED = {
 let DB = {};
 let currentUser = null;
 let BIN_ID = localStorage.getItem('inventrackBinId') || null;
-const API_KEY = '$2a$10$8UOkhnBXlo4K11zxqsnnOORzWK0YEMbTGqK7cxKzllgeRpsMpNgUa';
+const API_KEY = '$2a$10$cub6MrnOqcrwWpmECmfwqepMAWqG9G0IJLYUD66RXA.9kqL6dLkN6';
+const ACCESS_KEY = '$2a$10$8UOkhnBXlo4K11zxqsnnOORzWK0YEMbTGqK7cxKzllgeRpsMpNgUa';
 const BIN_API = 'https://api.jsonbin.io/v3/b';
 
 function showLoader(msg){
@@ -642,7 +643,9 @@ async function loadDB(){
   try{
     if(BIN_ID){
       showLoader('Loading your data…');
-      const res=await fetch(`${BIN_API}/${BIN_ID}/latest`,{headers:{'X-Master-Key':API_KEY}});
+      const res=await fetch(`${BIN_API}/${BIN_ID}/latest`,{
+        headers:{'X-Master-Key':API_KEY,'X-Access-Key':ACCESS_KEY}
+      });
       if(res.ok){ const json=await res.json(); DB=json.record; hideLoader(); return; }
     }
     // No bin yet — create one with seed data
@@ -650,23 +653,31 @@ async function loadDB(){
     DB=JSON.parse(JSON.stringify(SEED));
     const res=await fetch(BIN_API,{
       method:'POST',
-      headers:{'Content-Type':'application/json','X-Master-Key':API_KEY,'X-Bin-Name':'inventrackDB'},
+      headers:{'Content-Type':'application/json','X-Master-Key':API_KEY,'X-Access-Key':ACCESS_KEY,'X-Bin-Name':'inventrackDB','X-Bin-Private':'false'},
       body:JSON.stringify(DB)
     });
     if(res.ok){ const json=await res.json(); BIN_ID=json.metadata.id; localStorage.setItem('inventrackBinId',BIN_ID); }
-  }catch(e){ console.error(e); DB=JSON.parse(JSON.stringify(SEED)); }
+    else{ console.warn('Bin creation failed, using local'); }
+  }catch(e){
+    console.error('Cloud error, falling back to local',e);
+    const local=localStorage.getItem('inventrackLocal');
+    DB = local ? JSON.parse(local) : JSON.parse(JSON.stringify(SEED));
+  }
   hideLoader();
 }
 
 async function saveDB(){
-  if(!BIN_ID){ console.warn('No bin ID'); return; }
+  // Always save locally as backup
+  localStorage.setItem('inventrackLocal', JSON.stringify(DB));
+  if(!BIN_ID){ return; }
   try{
-    await fetch(`${BIN_API}/${BIN_ID}`,{
+    const res=await fetch(`${BIN_API}/${BIN_ID}`,{
       method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},
+      headers:{'Content-Type':'application/json','X-Master-Key':API_KEY,'X-Access-Key':ACCESS_KEY},
       body:JSON.stringify(DB)
     });
-  }catch(e){ console.error('Save failed',e); showToast('Cloud save failed — check connection','err'); }
+    if(!res.ok) console.warn('Cloud save failed silently');
+  }catch(e){ console.error('Save failed',e); }
 }
 function uid(){ return 'id_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); }
 function fmt(n){ return Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2}); }
@@ -677,6 +688,8 @@ function fmt(n){ return Number(n||0).toLocaleString('en-IN',{minimumFractionDigi
 function doLogin(){
   const u=document.getElementById('loginUser').value.trim();
   const p=document.getElementById('loginPass').value;
+  // If DB not loaded yet, use seed
+  if(!DB||!DB.users){ DB=JSON.parse(JSON.stringify(SEED)); }
   const user=DB.users.find(x=>x.username===u&&x.password===p);
   if(!user){document.getElementById('loginErr').textContent='❌ Invalid username or password.';return;}
   currentUser=user;
