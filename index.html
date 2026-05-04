@@ -202,6 +202,9 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
 .sync-dot.error{background:var(--danger);}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 </style>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -615,15 +618,10 @@ const SEED = {
 };
 
 // ─────────────────────────────────────
-//  STATE & STORAGE (JSONBin Cloud)
+//  STATE
 // ─────────────────────────────────────
 let DB = {};
 let currentUser = null;
-let BIN_ID = localStorage.getItem('inventrackBinId') || null;
-const API_KEY = '$2a$10$cub6MrnOqcrwWpmECmfwqepMAWqG9G0IJLYUD66RXA.9kqL6dLkN6';
-const ACCESS_KEY = '$2a$10$EZBmF/oYKql6TfByRSVyCONQ.6Sc28/yV7.Ep2gyJao6TkqktNQxK';
-const ACCESS_KEY_ID = '69f479db856a68218993ec96';
-const BIN_API = 'https://api.jsonbin.io/v3/b';
 
 function showLoader(msg){
   let el=document.getElementById('globalLoader');
@@ -639,48 +637,55 @@ function showLoader(msg){
 }
 function hideLoader(){ const el=document.getElementById('globalLoader'); if(el) el.style.display='none'; }
 
+// ─────────────────────────────────────
+//  FIREBASE
+// ─────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBSCW8lMXUa2NnWP9-o1GbckVOFRhxylAM",
+  authDomain: "inventory-app-8f931.firebaseapp.com",
+  projectId: "inventory-app-8f931",
+  storageBucket: "inventory-app-8f931.firebasestorage.app",
+  messagingSenderId: "958706191375",
+  appId: "1:958706191375:web:2184ab6c5cddbf10a0e77a"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const DOC_REF = db.collection('inventory').doc('data');
+
 async function loadDB(){
-  showLoader('Connecting to cloud database…');
+  showLoader('Connecting to Firebase…');
   try{
-    if(BIN_ID){
-      showLoader('Loading your data…');
-      const res=await fetch(`${BIN_API}/${BIN_ID}/latest`,{
-        headers:{'X-Master-Key':API_KEY,'X-Access-Key':ACCESS_KEY,'X-Access-Key-Id':ACCESS_KEY_ID,'X-Access-Key-Id':ACCESS_KEY_ID}
-      });
-      if(res.ok){ const json=await res.json(); DB=json.record; hideLoader(); return; }
+    const snap = await DOC_REF.get();
+    if(snap.exists){
+      DB = snap.data();
+      console.log('Firebase data loaded');
+    } else {
+      showLoader('Setting up database for first time…');
+      DB = JSON.parse(JSON.stringify(SEED));
+      await DOC_REF.set(DB);
+      console.log('Seed data written to Firebase');
     }
-    // No bin yet — create one with seed data
-    showLoader('Setting up your database for the first time…');
-    DB=JSON.parse(JSON.stringify(SEED));
-    const res=await fetch(BIN_API,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-Master-Key':API_KEY,'X-Access-Key':ACCESS_KEY,'X-Access-Key-Id':ACCESS_KEY_ID,'X-Bin-Name':'inventrackDB','X-Bin-Private':'false'},
-      body:JSON.stringify(DB)
-    });
-    if(res.ok){ const json=await res.json(); BIN_ID=json.metadata.id; localStorage.setItem('inventrackBinId',BIN_ID); }
-    else{ console.warn('Bin creation failed, using local'); }
-  }catch(e){
-    console.error('Cloud error, falling back to local',e);
-    const local=localStorage.getItem('inventrackLocal');
+  } catch(e){
+    console.error('Firebase error, using local fallback:', e);
+    const local = localStorage.getItem('inventrackLocal');
     DB = local ? JSON.parse(local) : JSON.parse(JSON.stringify(SEED));
   }
   hideLoader();
 }
 
 async function saveDB(){
-  // Always save locally as backup
   localStorage.setItem('inventrackLocal', JSON.stringify(DB));
-  if(!BIN_ID){ return; }
   try{
-    const res=await fetch(`${BIN_API}/${BIN_ID}`,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':API_KEY,'X-Access-Key':ACCESS_KEY,'X-Access-Key-Id':ACCESS_KEY_ID,'X-Access-Key-Id':ACCESS_KEY_ID},
-      body:JSON.stringify(DB)
-    });
-    if(!res.ok) console.warn('Cloud save failed silently');
-  }catch(e){ console.error('Save failed',e); }
+    await DOC_REF.set(DB);
+    setSyncStatus('ok');
+  } catch(e){
+    console.error('Firebase save failed:', e);
+    setSyncStatus('error');
+  }
 }
-function uid(){ return 'id_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); }
+
 function fmt(n){ return Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2}); }
 
 // ─────────────────────────────────────
