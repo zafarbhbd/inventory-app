@@ -5,210 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>InvenTrack — Inventory Management</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg: #0d0f14;
-  --surface: #161920;
-  --surface2: #1e2330;
-  --border: #2a2f3d;
-  --accent: #f0c040;
-  --blue: #3b82f6;
-  --danger: #ef4444;
-  --success: #22c55e;
-  --warning: #f97316;
-  --text: #e8eaf0;
-  --text2: #8b90a0;
-  --text3: #3a3f50;
-  --radius: 12px;
-  --fh: 'Syne', sans-serif;
-  --fb: 'DM Sans', sans-serif;
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100vh;}
-::-webkit-scrollbar{width:5px;}
-::-webkit-scrollbar-track{background:var(--surface);}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+<link rel="stylesheet" href="style.css">
 
-/* LOGIN */
-#loginScreen{
-  min-height:100vh;display:flex;align-items:center;justify-content:center;
-  background-image:radial-gradient(ellipse at 20% 50%,#f0c04010 0%,transparent 55%),
-                   radial-gradient(ellipse at 80% 20%,#3b82f608 0%,transparent 55%);
-}
-.login-box{width:420px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:48px 40px;animation:fadeUp .4s ease;}
-.login-logo{font-family:var(--fh);font-size:26px;font-weight:800;margin-bottom:6px;}
-.login-logo span{color:var(--accent);}
-.login-sub{color:var(--text2);font-size:13px;margin-bottom:36px;}
-.lbl{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px;display:block;}
-.linput{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--fb);font-size:15px;padding:12px 15px;border-radius:8px;outline:none;transition:border .2s;margin-bottom:18px;}
-.linput:focus{border-color:var(--accent);}
-.lbtn{width:100%;background:var(--accent);color:#000;font-family:var(--fh);font-size:15px;font-weight:700;padding:13px;border:none;border-radius:8px;cursor:pointer;transition:opacity .2s;margin-top:4px;}
-.lbtn:hover{opacity:.85;}
-.lerr{color:var(--danger);font-size:13px;margin-top:10px;min-height:16px;text-align:center;}
-.lhint{margin-top:22px;padding-top:18px;border-top:1px solid var(--border);font-size:12px;color:var(--text3);text-align:center;line-height:2;}
-.lhint b{color:var(--text2);}
-
-/* APP SHELL */
-#appShell{display:none;min-height:100vh;}
-
-/* SIDEBAR */
-.sidebar{width:240px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;z-index:100;display:flex;flex-direction:column;}
-.s-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);}
-.s-logo-text{font-family:var(--fh);font-size:19px;font-weight:800;}
-.s-logo-text span{color:var(--accent);}
-.s-user{font-size:12px;color:var(--text2);margin-top:5px;}
-.s-user b{color:var(--accent);}
-.nav{padding:12px 10px;flex:1;overflow-y:auto;}
-.nav-sec{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text3);padding:10px 12px 5px;}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--text2);transition:all .15s;margin-bottom:1px;user-select:none;}
-.nav-item:hover{background:var(--surface2);color:var(--text);}
-.nav-item.active{background:var(--accent);color:#000;font-weight:700;}
-.nav-item .ni{font-size:15px;width:20px;text-align:center;}
-.s-footer{padding:12px 10px;border-top:1px solid var(--border);}
-.logout-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--danger);transition:all .15s;user-select:none;width:100%;background:none;border:none;}
-.logout-btn:hover{background:#ef444415;}
-
-/* MAIN */
-.main{margin-left:240px;padding:32px;min-height:100vh;}
-.page{display:none;animation:fadeUp .25s ease;}
-.page.active{display:block;}
-.pg-title{font-family:var(--fh);font-size:24px;font-weight:800;margin-bottom:3px;}
-.pg-sub{color:var(--text2);font-size:13px;margin-bottom:26px;}
-
-/* CARDS */
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
-.card-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:8px;}
-.card-val{font-family:var(--fh);font-size:22px;font-weight:800;}
-.card-val.green{color:var(--success);}
-.card-val.yellow{color:var(--accent);}
-.card-val.blue{color:var(--blue);}
-.card-val.red{color:var(--danger);}
-
-/* ALERT BOX */
-.alert-box{background:var(--surface);border:1px solid var(--warning);border-radius:var(--radius);padding:16px 20px;margin-bottom:24px;}
-.alert-title{font-family:var(--fh);font-size:13px;font-weight:700;color:var(--warning);margin-bottom:10px;display:flex;align-items:center;gap:7px;}
-.alert-row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);padding:5px 0;border-bottom:1px solid var(--border);}
-.alert-row:last-child{border-bottom:none;}
-.alert-dot{width:6px;height:6px;border-radius:50%;background:var(--warning);flex-shrink:0;}
-.no-alert{font-size:13px;color:var(--success);display:flex;align-items:center;gap:8px;}
-
-/* GRID 2 */
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px;}
-
-/* TABLE BOX */
-.tbox{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:24px;}
-.tbox-hdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.tbox-title{font-family:var(--fh);font-size:14px;font-weight:700;}
-table{width:100%;border-collapse:collapse;font-size:13px;}
-thead th{padding:9px 15px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);background:var(--surface2);}
-tbody td{padding:11px 15px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle;}
-tbody tr:last-child td{border-bottom:none;}
-tbody tr:hover td{background:var(--surface2);color:var(--text);}
-.empty-row td{text-align:center;color:var(--text3);padding:28px;font-size:13px;}
-
-/* PILL */
-.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;}
-.pill-red{background:#ef444420;color:var(--danger);}
-.pill-green{background:#22c55e20;color:var(--success);}
-.pill-yellow{background:#f0c04020;color:var(--accent);}
-.pill-blue{background:#3b82f620;color:var(--blue);}
-
-/* TOOLBAR */
-.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap;}
-.search-input{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--fb);font-size:13px;padding:8px 14px;border-radius:8px;outline:none;transition:border .2s;width:220px;}
-.search-input:focus{border-color:var(--accent);}
-
-/* BUTTONS */
-.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-family:var(--fb);font-size:13px;font-weight:500;transition:opacity .2s;display:inline-flex;align-items:center;gap:6px;}
-.btn:hover{opacity:.85;}
-.btn-accent{background:var(--accent);color:#000;font-weight:700;}
-.btn-danger{background:#ef444425;color:var(--danger);border:1px solid #ef444440;}
-.btn-ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
-.btn-blue{background:#3b82f625;color:var(--blue);border:1px solid #3b82f640;}
-.btn-sm{padding:5px 10px;font-size:12px;}
-.act-btns{display:flex;gap:6px;}
-
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:#00000088;z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
-.modal-overlay.open{display:flex;}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;animation:fadeUp .25s ease;}
-.modal-title{font-family:var(--fh);font-size:18px;font-weight:800;margin-bottom:6px;}
-.modal-sub{color:var(--text2);font-size:13px;margin-bottom:24px;}
-.form-row{margin-bottom:16px;}
-.form-lbl{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.7px;text-transform:uppercase;margin-bottom:7px;display:block;}
-.form-input,.form-select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--fb);font-size:14px;padding:10px 13px;border-radius:8px;outline:none;transition:border .2s;}
-.form-input:focus,.form-select:focus{border-color:var(--accent);}
-.form-select option{background:var(--surface);}
-.form-input[readonly]{background:var(--surface2);color:var(--text3);cursor:default;}
-.grid2f{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;}
-
-/* CONFIRM */
-.confirm-modal{max-width:380px;text-align:center;}
-.confirm-icon{font-size:38px;margin-bottom:12px;}
-.confirm-msg{color:var(--text2);font-size:14px;margin-bottom:24px;}
-
-/* USER CARD */
-.user-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;display:flex;align-items:center;gap:16px;margin-bottom:10px;}
-.user-avatar{width:42px;height:42px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:16px;font-weight:800;color:#000;flex-shrink:0;}
-.user-name{font-family:var(--fh);font-size:14px;font-weight:700;}
-.user-role{font-size:12px;color:var(--text2);margin-top:3px;}
-.user-actions{margin-left:auto;display:flex;gap:8px;}
-
-/* STOCK BAR */
-.stock-bar-wrap{width:80px;background:var(--surface2);border-radius:4px;height:5px;overflow:hidden;margin-top:5px;}
-.stock-bar{height:100%;border-radius:4px;transition:width .3s;}
-
-/* TOAST */
-.toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;display:flex;align-items:center;gap:10px;animation:fadeUp .3s ease;box-shadow:0 8px 24px #0008;transition:opacity .3s;}
-.toast.hidden{opacity:0;pointer-events:none;}
-
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
-
-/* MOBILE */
-@media(max-width:768px){
-  .sidebar{width:100%;min-height:auto;position:relative;flex-direction:row;flex-wrap:wrap;}
-  .nav{display:flex;flex-wrap:wrap;padding:6px;}
-  .nav-sec{display:none;}
-  .nav-item{padding:7px 10px;font-size:12px;}
-  .main{margin-left:0;padding:16px;}
-  .cards{grid-template-columns:1fr 1fr;}
-  .grid2{grid-template-columns:1fr;}
-  .grid2f{grid-template-columns:1fr;}
-  .s-footer{width:100%;}
-  table{font-size:11px;}
-  thead th,tbody td{padding:7px 8px;}
-}
-@media(max-width:480px){
-  .cards{grid-template-columns:1fr;}
-  .toolbar{flex-direction:column;align-items:stretch;}
-  .search-input{width:100%;}
-}
-/* PRINT */
-@media print{
-  .sidebar,.toolbar,.act-btns,.modal-overlay,.toast{display:none!important;}
-  .main{margin-left:0;padding:0;}
-  body{background:#fff;color:#000;}
-  .card{border:1px solid #ccc;background:#fff;}
-  .card-val{color:#000!important;}
-  thead th{background:#f0f0f0;color:#333;}
-  tbody td{color:#333;}
-  .tbox{border:1px solid #ccc;}
-}
-/* SYNC INDICATOR */
-.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block;margin-right:6px;}
-.sync-dot.syncing{background:var(--warning);animation:pulse .8s infinite;}
-.sync-dot.error{background:var(--danger);}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-</style>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-<!-- LOGIN -->
+<!-- ═══════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════ -->
 <div id="loginScreen">
   <div class="login-box">
     <div class="login-logo">Inven<span>Track</span></div>
@@ -226,8 +33,12 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
   </div>
 </div>
 
-<!-- APP -->
+<!-- ═══════════════════════════════════
+     APP SHELL
+═══════════════════════════════════ -->
 <div id="appShell">
+
+  <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="s-logo">
       <div class="s-logo-text">Inven<span>Track</span></div>
@@ -236,18 +47,26 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
     <div class="nav">
       <div class="nav-sec">Overview</div>
       <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="ni">📊</span>Dashboard</div>
+
       <div class="nav-sec">Records</div>
       <div class="nav-item" onclick="showPage('products',this)"><span class="ni">📦</span>Products</div>
       <div class="nav-item" onclick="showPage('vendors',this)"><span class="ni">🏭</span>Vendors</div>
       <div class="nav-item" onclick="showPage('customers',this)"><span class="ni">👥</span>Customers</div>
+
       <div class="nav-sec">Transactions</div>
       <div class="nav-item" onclick="showPage('purchase',this)"><span class="ni">🛒</span>Purchase Entry</div>
       <div class="nav-item" onclick="showPage('sales',this)"><span class="ni">💰</span>Sales Entry</div>
+
       <div class="nav-sec">Stock</div>
       <div class="nav-item" onclick="showPage('inventory',this)"><span class="ni">🗄️</span>Inventory</div>
+
+      <div class="nav-sec">Finance</div>
+      <div class="nav-item" onclick="showPage('ledger',this)"><span class="ni">⚖️</span>Balance Ledger</div>
+
       <div class="nav-sec">Admin</div>
       <div class="nav-item" id="usersNav" onclick="showPage('users',this)"><span class="ni">🔐</span>Manage Users</div>
     </div>
+
     <div class="s-footer">
       <div style="padding:8px 12px 10px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">
         <span class="sync-dot" id="syncDot"></span><span id="syncStatus">Connected</span>
@@ -260,27 +79,47 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
     </div>
   </div>
 
+  <!-- MAIN CONTENT -->
   <div class="main">
 
-    <!-- DASHBOARD -->
+    <!-- ─── DASHBOARD ─── -->
     <div class="page active" id="page-dashboard">
       <div class="pg-title">Dashboard</div>
       <div class="pg-sub" id="dashDate"></div>
-      <div class="cards" id="dashCards"></div>
+
+      <!-- 5 stat cards (4 original + Net Balance) -->
+      <div class="cards-5" id="dashCards"></div>
+
+      <!-- Low stock alerts -->
       <div class="alert-box" id="dashAlerts"></div>
+
+      <!-- Balance visualization chart -->
+      <div class="balance-chart-wrap">
+        <div class="balance-chart-title">⚖️ Balance Overview — Active Entries by Party
+          <span style="margin-left:auto;font-size:11px;font-weight:400;color:var(--text2)">
+            <span style="display:inline-block;width:10px;height:10px;background:var(--danger);border-radius:2px;margin-right:4px"></span>I Owe &nbsp;
+            <span style="display:inline-block;width:10px;height:10px;background:var(--success);border-radius:2px;margin-right:4px"></span>They Owe Me
+          </span>
+        </div>
+        <div id="balanceChart"></div>
+      </div>
+
+      <!-- Top tables -->
       <div class="grid2">
         <div class="tbox">
           <div class="tbox-hdr"><span class="tbox-title">🏆 Top Customers by Sales</span></div>
-          <table><thead><tr><th>Customer</th><th>Total (৳)</th></tr></thead><tbody id="topCustTable"></tbody></table>
+          <table><thead><tr><th>Customer</th><th>Total (৳)</th></tr></thead>
+          <tbody id="topCustTable"></tbody></table>
         </div>
         <div class="tbox">
           <div class="tbox-hdr"><span class="tbox-title">🔥 Top Products by Units Sold</span></div>
-          <table><thead><tr><th>Product</th><th>Units Sold</th></tr></thead><tbody id="topProdTable"></tbody></table>
+          <table><thead><tr><th>Product</th><th>Units Sold</th></tr></thead>
+          <tbody id="topProdTable"></tbody></table>
         </div>
       </div>
     </div>
 
-    <!-- PRODUCTS -->
+    <!-- ─── PRODUCTS ─── -->
     <div class="page" id="page-products">
       <div class="pg-title">Products</div>
       <div class="pg-sub">Manage your product catalog</div>
@@ -289,12 +128,14 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
         <button class="btn btn-accent" onclick="openModal('productModal')">＋ Add Product</button>
       </div>
       <div class="tbox">
-        <table><thead><tr><th>HSN Code</th><th>Product Name</th><th>Cost (৳)</th><th>Selling Price (৳)</th><th>Actions</th></tr></thead>
-        <tbody id="productsTable"></tbody></table>
+        <table>
+          <thead><tr><th>HSN Code</th><th>Product Name</th><th>Cost (৳)</th><th>Selling Price (৳)</th><th>Actions</th></tr></thead>
+          <tbody id="productsTable"></tbody>
+        </table>
       </div>
     </div>
 
-    <!-- VENDORS -->
+    <!-- ─── VENDORS ─── -->
     <div class="page" id="page-vendors">
       <div class="pg-title">Vendors</div>
       <div class="pg-sub">Manage your supplier information</div>
@@ -303,12 +144,14 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
         <button class="btn btn-accent" onclick="openModal('vendorModal')">＋ Add Vendor</button>
       </div>
       <div class="tbox">
-        <table><thead><tr><th>HSN Code</th><th>Product</th><th>Vendor Name</th><th>Phone</th><th>Address</th><th>Actions</th></tr></thead>
-        <tbody id="vendorsTable"></tbody></table>
+        <table>
+          <thead><tr><th>HSN Code</th><th>Product</th><th>Vendor Name</th><th>Phone</th><th>Address</th><th>Actions</th></tr></thead>
+          <tbody id="vendorsTable"></tbody>
+        </table>
       </div>
     </div>
 
-    <!-- CUSTOMERS -->
+    <!-- ─── CUSTOMERS ─── -->
     <div class="page" id="page-customers">
       <div class="pg-title">Customers</div>
       <div class="pg-sub">Manage your buyer information</div>
@@ -317,12 +160,14 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
         <button class="btn btn-accent" onclick="openModal('customerModal')">＋ Add Customer</button>
       </div>
       <div class="tbox">
-        <table><thead><tr><th>Cust ID</th><th>Name</th><th>Email</th><th>Address</th><th>Actions</th></tr></thead>
-        <tbody id="customersTable"></tbody></table>
+        <table>
+          <thead><tr><th>Cust ID</th><th>Name</th><th>Email</th><th>Address</th><th>Actions</th></tr></thead>
+          <tbody id="customersTable"></tbody>
+        </table>
       </div>
     </div>
 
-    <!-- PURCHASE -->
+    <!-- ─── PURCHASE ─── -->
     <div class="page" id="page-purchase">
       <div class="pg-title">Purchase Entry</div>
       <div class="pg-sub">Record stock received from vendors</div>
@@ -331,12 +176,14 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
         <button class="btn btn-accent" onclick="openModal('purchaseModal')">＋ New Purchase</button>
       </div>
       <div class="tbox">
-        <table><thead><tr><th>HSN</th><th>Product</th><th>Vendor</th><th>Date</th><th>Units</th><th>Cost (৳)</th><th>Amount (৳)</th><th>Actions</th></tr></thead>
-        <tbody id="purchaseTable"></tbody></table>
+        <table>
+          <thead><tr><th>HSN</th><th>Product</th><th>Vendor</th><th>Date</th><th>Units</th><th>Cost (৳)</th><th>Amount (৳)</th><th>Actions</th></tr></thead>
+          <tbody id="purchaseTable"></tbody>
+        </table>
       </div>
     </div>
 
-    <!-- SALES -->
+    <!-- ─── SALES ─── -->
     <div class="page" id="page-sales">
       <div class="pg-title">Sales Entry</div>
       <div class="pg-sub">Record stock sold to customers</div>
@@ -345,22 +192,54 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
         <button class="btn btn-accent" onclick="openModal('salesModal')">＋ New Sale</button>
       </div>
       <div class="tbox">
-        <table><thead><tr><th>Customer</th><th>HSN</th><th>Product</th><th>Date</th><th>Units</th><th>Price (৳)</th><th>Amount (৳)</th><th>Actions</th></tr></thead>
-        <tbody id="salesTable"></tbody></table>
+        <table>
+          <thead><tr><th>Customer</th><th>HSN</th><th>Product</th><th>Date</th><th>Units</th><th>Price (৳)</th><th>Amount (৳)</th><th>Actions</th></tr></thead>
+          <tbody id="salesTable"></tbody>
+        </table>
       </div>
     </div>
 
-    <!-- INVENTORY -->
+    <!-- ─── INVENTORY ─── -->
     <div class="page" id="page-inventory">
       <div class="pg-title">Inventory</div>
-      <div class="pg-sub">Live stock levels — auto-calculated from purchases & sales</div>
+      <div class="pg-sub">Live stock levels — auto-calculated from purchases &amp; sales</div>
       <div class="tbox">
-        <table><thead><tr><th>HSN Code</th><th>Product Name</th><th>Cost (৳)</th><th>Purchased</th><th>Sold</th><th>Stock</th><th>Stock Value (৳)</th><th>Status</th></tr></thead>
-        <tbody id="inventoryTable"></tbody></table>
+        <table>
+          <thead><tr><th>HSN Code</th><th>Product Name</th><th>Cost (৳)</th><th>Purchased</th><th>Sold</th><th>Stock</th><th>Stock Value (৳)</th><th>Status</th></tr></thead>
+          <tbody id="inventoryTable"></tbody>
+        </table>
       </div>
     </div>
 
-    <!-- USERS -->
+    <!-- ─── BALANCE LEDGER ─── -->
+    <div class="page" id="page-ledger">
+      <div class="pg-title">Balance Ledger</div>
+      <div class="pg-sub">Track inter-store credit — goods taken or given without immediate payment</div>
+
+      <!-- Summary cards -->
+      <div class="cards-5" id="ledgerSummary" style="grid-template-columns:repeat(3,1fr);max-width:680px;margin-bottom:24px;"></div>
+
+      <!-- How it works info box -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;font-size:13px;color:var(--text2);line-height:1.7">
+        <b style="color:var(--accent)">⚖️ How Balance Ledger works:</b><br>
+        <b style="color:var(--danger)">↑ I Owe Them</b> — Your store took goods from another store without paying yet. This <b>increases your payable balance</b>.<br>
+        <b style="color:var(--success)">↓ They Owe Me</b> — Another store took goods from you without paying yet. This <b>increases your receivable balance</b>.<br>
+        Mark entries as <b>Settled</b> once payment is made. Only pending entries affect your Net Balance.
+      </div>
+
+      <div class="toolbar">
+        <input class="search-input" placeholder="🔍  Search by party or note…" oninput="renderLedger(this.value)">
+        <button class="btn btn-accent" onclick="openModal('ledgerModal')">＋ New Balance Entry</button>
+      </div>
+      <div class="tbox">
+        <table>
+          <thead><tr><th>Date</th><th>Party (Store/Person)</th><th>Type</th><th>Amount (৳)</th><th>Note</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="ledgerTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── USERS ─── -->
     <div class="page" id="page-users">
       <div class="pg-title">Manage Users</div>
       <div class="pg-sub">Add or remove staff accounts — Admin only</div>
@@ -371,12 +250,15 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
       <div id="usersList"></div>
     </div>
 
-  </div>
-</div>
+  </div><!-- /main -->
+</div><!-- /appShell -->
 
-<!-- MODALS -->
 
-<!-- PRODUCT -->
+<!-- ═══════════════════════════════════
+     MODALS
+═══════════════════════════════════ -->
+
+<!-- PRODUCT MODAL -->
 <div class="modal-overlay" id="productModal">
   <div class="modal">
     <div class="modal-title" id="productModalTitle">Add Product</div>
@@ -395,7 +277,7 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
   </div>
 </div>
 
-<!-- VENDOR -->
+<!-- VENDOR MODAL -->
 <div class="modal-overlay" id="vendorModal">
   <div class="modal">
     <div class="modal-title" id="vendorModalTitle">Add Vendor</div>
@@ -419,7 +301,7 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
   </div>
 </div>
 
-<!-- CUSTOMER -->
+<!-- CUSTOMER MODAL -->
 <div class="modal-overlay" id="customerModal">
   <div class="modal">
     <div class="modal-title" id="customerModalTitle">Add Customer</div>
@@ -438,7 +320,7 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
   </div>
 </div>
 
-<!-- PURCHASE -->
+<!-- PURCHASE MODAL -->
 <div class="modal-overlay" id="purchaseModal">
   <div class="modal">
     <div class="modal-title" id="purchaseModalTitle">New Purchase Entry</div>
@@ -466,7 +348,7 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
   </div>
 </div>
 
-<!-- SALES -->
+<!-- SALES MODAL -->
 <div class="modal-overlay" id="salesModal">
   <div class="modal">
     <div class="modal-title" id="salesModalTitle">New Sales Entry</div>
@@ -499,7 +381,65 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
   </div>
 </div>
 
-<!-- USER -->
+<!-- BALANCE LEDGER MODAL -->
+<div class="modal-overlay" id="ledgerModal">
+  <div class="modal">
+    <div class="modal-title" id="ledgerModalTitle">New Balance Entry</div>
+    <div class="modal-sub">Record a credit transaction between stores</div>
+    <input type="hidden" id="editLedgerId">
+
+    <div class="form-row">
+      <label class="form-lbl">Party Name (Store / Person)</label>
+      <input class="form-input" id="ledParty" placeholder="e.g. Ahmed Brothers Store">
+    </div>
+
+    <div class="grid2f">
+      <div class="form-row">
+        <label class="form-lbl">Type</label>
+        <select class="form-select" id="ledType">
+          <option value="owe">↑ I Owe Them (we took goods)</option>
+          <option value="owed">↓ They Owe Me (they took goods)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-lbl">Amount (৳)</label>
+        <input class="form-input" id="ledAmount" type="number" min="1" placeholder="0">
+      </div>
+    </div>
+
+    <div class="grid2f">
+      <div class="form-row">
+        <label class="form-lbl">Date</label>
+        <input class="form-input" id="ledDate" type="date">
+      </div>
+      <div class="form-row" style="display:flex;flex-direction:column;justify-content:flex-end">
+        <label class="form-lbl">Mark as Settled?</label>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
+          <input type="checkbox" id="ledSettled" style="width:16px;height:16px;accent-color:var(--accent)">
+          <span style="font-size:13px;color:var(--text2)">Already paid / cleared</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label class="form-lbl">Note (optional)</label>
+      <input class="form-input" id="ledNote" placeholder="e.g. Keyboards taken for urgent order">
+    </div>
+
+    <!-- Live impact hint -->
+    <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:4px">
+      💡 <b style="color:var(--text)">Impact on Net Balance:</b>
+      <span id="ledgerHint" style="color:var(--accent)">Select a type to see the impact</span>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('ledgerModal')">Cancel</button>
+      <button class="btn btn-accent" onclick="saveLedger()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER MODAL -->
 <div class="modal-overlay" id="userModal">
   <div class="modal">
     <div class="modal-title" id="userModalTitle">Add User</div>
@@ -526,7 +466,7 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
   </div>
 </div>
 
-<!-- CONFIRM -->
+<!-- CONFIRM DELETE MODAL -->
 <div class="modal-overlay" id="confirmModal">
   <div class="modal confirm-modal">
     <div class="confirm-icon">🗑️</div>
@@ -542,717 +482,25 @@ tbody tr:hover td{background:var(--surface2);color:var(--text);}
 <!-- TOAST -->
 <div class="toast hidden" id="toast"><span id="toastIcon">✅</span> <span id="toastMsg">Saved</span></div>
 
+<!-- ═══════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════ -->
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+
+<!-- Ledger type hint (tiny inline script for UX) -->
 <script>
-// ─────────────────────────────────────
-//  DEFAULT SEED DATA (mirrors your Excel)
-// ─────────────────────────────────────
-const SEED = {
-  users:[
-    {id:'u1',name:'Administrator',username:'admin',password:'admin123',role:'admin'},
-    {id:'u2',name:'Manager',username:'manager',password:'manager123',role:'manager'},
-    {id:'u3',name:'Staff Member',username:'staff',password:'staff123',role:'staff'},
-  ],
-  products:[
-    {id:'p1',hsn:'N1001',name:'Smart Watch',cost:980,price:1176},
-    {id:'p2',hsn:'N1002',name:'Laptop HP xyz i5',cost:34500,price:41400},
-    {id:'p3',hsn:'N1003',name:'Wireless Printer',cost:4600,price:5520},
-    {id:'p4',hsn:'N1004',name:'Desktop',cost:21000,price:25200},
-    {id:'p5',hsn:'N1005',name:'Mouse',cost:200,price:240},
-    {id:'p6',hsn:'N1006',name:'Rgb Keyboard',cost:340,price:408},
-    {id:'p7',hsn:'N1007',name:'Camera',cost:52000,price:62400},
-    {id:'p8',hsn:'N1008',name:'Headphones',cost:799,price:958.8},
-    {id:'p9',hsn:'N1009',name:'Speakers',cost:670,price:804},
-    {id:'p10',hsn:'N1010',name:'Tablets',cost:23500,price:28200},
-  ],
-  vendors:[
-    {id:'v1',hsn:'N1001',product:'Smart Watch',name:'Tech99',phone:'9812xxxxxx',address:'Faridabad, 121101'},
-    {id:'v2',hsn:'N1002',product:'Laptop HP xyz i5',name:'Tech99',phone:'9812xxxxxx',address:'Faridabad, 121102'},
-    {id:'v3',hsn:'N1003',product:'Wireless Printer',name:'Tech99',phone:'9812xxxxxx',address:'Faridabad, 121103'},
-    {id:'v4',hsn:'N1004',product:'Desktop',name:'GG Traders',phone:'9813xxxxxx',address:'Gurgaon, Sec-15'},
-    {id:'v5',hsn:'N1005',product:'Mouse',name:'GG Traders',phone:'9813xxxxxx',address:'Gurgaon, Sec-16'},
-    {id:'v6',hsn:'N1006',product:'Rgb Keyboard',name:'GG Traders',phone:'9813xxxxxx',address:'Gurgaon, Sec-17'},
-    {id:'v7',hsn:'N1007',product:'Camera',name:'GG Traders',phone:'9813xxxxxx',address:'Gurgaon, Sec-18'},
-    {id:'v8',hsn:'N1008',product:'Headphones',name:'Compac',phone:'9814xxxxxx',address:'New Delhi, 110012'},
-    {id:'v9',hsn:'N1009',product:'Speakers',name:'Compac',phone:'9814xxxxxx',address:'New Delhi, 110013'},
-    {id:'v10',hsn:'N1010',product:'Tablets',name:'Compac',phone:'9814xxxxxx',address:'New Delhi, 110014'},
-  ],
-  customers:[
-    {id:'c1',custId:'100',name:'Ram Sales',email:'Ram@gmail.com',address:'Delhi, India'},
-    {id:'c2',custId:'101',name:'Atul Ltd.',email:'Atu@gmail.com',address:'121102, Palwal, HR'},
-    {id:'c3',custId:'102',name:'MK Tech.',email:'MK@gmail.com',address:'Faridabad, 121101'},
-    {id:'c4',custId:'103',name:'99store',email:'99s@gmail.com',address:'Agra, UP'},
-    {id:'c5',custId:'104',name:'Rajesh Kumar',email:'Raj@gmail.com',address:'New Delhi, 110011'},
-    {id:'c6',custId:'105',name:'Amit',email:'Ami@gmail.com',address:'Gurgaon, Sec-15'},
-    {id:'c7',custId:'106',name:'Jain Tel.',email:'Jai@gmail.com',address:'Janpath, New Delhi'},
-  ],
-  purchases:[
-    {id:'pu1',hsn:'N1005',product:'Mouse',vendor:'GG Traders',date:'2024-01-01',units:20,cost:200,amount:4000},
-    {id:'pu2',hsn:'N1008',product:'Headphones',vendor:'Compac',date:'2024-01-02',units:10,cost:799,amount:7990},
-    {id:'pu3',hsn:'N1006',product:'Rgb Keyboard',vendor:'GG Traders',date:'2024-01-03',units:50,cost:340,amount:17000},
-    {id:'pu4',hsn:'N1004',product:'Desktop',vendor:'GG Traders',date:'2024-01-04',units:100,cost:21000,amount:2100000},
-    {id:'pu5',hsn:'N1007',product:'Camera',vendor:'GG Traders',date:'2024-01-05',units:20,cost:52000,amount:1040000},
-    {id:'pu6',hsn:'N1001',product:'Smart Watch',vendor:'Tech99',date:'2024-01-06',units:40,cost:980,amount:39200},
-    {id:'pu7',hsn:'N1002',product:'Laptop HP xyz i5',vendor:'Tech99',date:'2024-01-07',units:30,cost:34500,amount:1035000},
-    {id:'pu8',hsn:'N1003',product:'Wireless Printer',vendor:'Tech99',date:'2024-01-08',units:40,cost:4600,amount:184000},
-    {id:'pu9',hsn:'N1009',product:'Speakers',vendor:'Compac',date:'2024-01-09',units:55,cost:670,amount:36850},
-    {id:'pu10',hsn:'N1010',product:'Tablets',vendor:'Compac',date:'2024-01-10',units:40,cost:23500,amount:940000},
-    {id:'pu11',hsn:'N1008',product:'Headphones',vendor:'Compac',date:'2024-01-10',units:35,cost:799,amount:27965},
-    {id:'pu12',hsn:'N1007',product:'Camera',vendor:'GG Traders',date:'2024-01-10',units:2,cost:52000,amount:104000},
-    {id:'pu13',hsn:'N1008',product:'Headphones',vendor:'Compac',date:'2024-01-10',units:10,cost:799,amount:7990},
-  ],
-  sales:[
-    {id:'s1',custId:'103',customer:'99store',hsn:'N1008',product:'Headphones',date:'2024-01-01',units:10,price:958.8,amount:9588},
-    {id:'s2',custId:'104',customer:'Rajesh Kumar',hsn:'N1006',product:'Rgb Keyboard',date:'2024-01-02',units:37,price:408,amount:15096},
-    {id:'s3',custId:'101',customer:'Atul Ltd.',hsn:'N1004',product:'Desktop',date:'2024-01-03',units:10,price:25200,amount:252000},
-    {id:'s4',custId:'100',customer:'Ram Sales',hsn:'N1008',product:'Headphones',date:'2024-01-04',units:32,price:958.8,amount:30681.6},
-    {id:'s5',custId:'102',customer:'MK Tech.',hsn:'N1002',product:'Laptop HP xyz i5',date:'2024-01-05',units:14,price:41400,amount:579600},
-    {id:'s6',custId:'103',customer:'99store',hsn:'N1004',product:'Desktop',date:'2024-01-06',units:55,price:25200,amount:1386000},
-    {id:'s7',custId:'105',customer:'Amit',hsn:'N1010',product:'Tablets',date:'2024-01-07',units:8,price:28200,amount:225600},
-    {id:'s8',custId:'106',customer:'Jain Tel.',hsn:'N1009',product:'Speakers',date:'2024-01-08',units:52,price:804,amount:41808},
-    {id:'s9',custId:'104',customer:'Rajesh Kumar',hsn:'N1010',product:'Tablets',date:'2024-01-08',units:4,price:28200,amount:112800},
-    {id:'s10',custId:'103',customer:'99store',hsn:'N1001',product:'Smart Watch',date:'2024-01-08',units:37,price:1176,amount:43512},
-    {id:'s11',custId:'104',customer:'Rajesh Kumar',hsn:'N1007',product:'Camera',date:'2024-01-08',units:4,price:62400,amount:249600},
-    {id:'s12',custId:'105',customer:'Amit',hsn:'N1007',product:'Camera',date:'2024-01-08',units:4,price:62400,amount:249600},
-    {id:'s13',custId:'104',customer:'Rajesh Kumar',hsn:'N1003',product:'Wireless Printer',date:'2024-01-08',units:5,price:5520,amount:27600},
-  ],
-};
-
-// ─────────────────────────────────────
-//  STATE
-// ─────────────────────────────────────
-let DB = {};
-let currentUser = null;
-
-function showLoader(msg){
-  let el=document.getElementById('globalLoader');
-  if(!el){
-    el=document.createElement('div');
-    el.id='globalLoader';
-    el.style.cssText='position:fixed;inset:0;background:#0d0f14ee;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Syne,sans-serif;';
-    el.innerHTML='<div style="font-size:28px;font-weight:800;color:#f0c040;margin-bottom:12px">InvenTrack</div><div id="loaderMsg" style="color:#8b90a0;font-size:14px"></div><div style="margin-top:20px;width:40px;height:40px;border:3px solid #2a2f3d;border-top-color:#f0c040;border-radius:50%;animation:spin .8s linear infinite"></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
-    document.body.appendChild(el);
-  }
-  document.getElementById('loaderMsg').textContent=msg||'Loading…';
-  el.style.display='flex';
-}
-function hideLoader(){ const el=document.getElementById('globalLoader'); if(el) el.style.display='none'; }
-
-// ─────────────────────────────────────
-//  FIREBASE
-// ─────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyBSCW8lMXUa2NnWP9-o1GbckVOFRhxylAM",
-  authDomain: "inventory-app-8f931.firebaseapp.com",
-  projectId: "inventory-app-8f931",
-  storageBucket: "inventory-app-8f931.firebasestorage.app",
-  messagingSenderId: "958706191375",
-  appId: "1:958706191375:web:2184ab6c5cddbf10a0e77a"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const DOC_REF = db.collection('inventory').doc('data');
-
-async function loadDB(){
-  showLoader('Connecting to Firebase…');
-  try{
-    const snap = await DOC_REF.get();
-    if(snap.exists){
-      DB = snap.data();
-      console.log('Firebase data loaded');
+  document.getElementById('ledType').addEventListener('change', function() {
+    const hint = document.getElementById('ledgerHint');
+    if (this.value === 'owe') {
+      hint.textContent = 'Your payable balance increases — you owe them money until settled.';
+      hint.style.color = 'var(--danger)';
     } else {
-      showLoader('Setting up database for first time…');
-      DB = JSON.parse(JSON.stringify(SEED));
-      await DOC_REF.set(DB);
-      console.log('Seed data written to Firebase');
+      hint.textContent = 'Your receivable balance increases — they owe you money until settled.';
+      hint.style.color = 'var(--success)';
     }
-  } catch(e){
-    console.error('Firebase error, using local fallback:', e);
-    const local = localStorage.getItem('inventrackLocal');
-    DB = local ? JSON.parse(local) : JSON.parse(JSON.stringify(SEED));
-  }
-  hideLoader();
-}
-
-async function saveDB(){
-  localStorage.setItem('inventrackLocal', JSON.stringify(DB));
-  try{
-    await DOC_REF.set(DB);
-    setSyncStatus('ok');
-  } catch(e){
-    console.error('Firebase save failed:', e);
-    setSyncStatus('error');
-  }
-}
-
-function fmt(n){ return Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2}); }
-
-// ─────────────────────────────────────
-//  AUTH
-// ─────────────────────────────────────
-function doLogin(){
-  const u=document.getElementById('loginUser').value.trim();
-  const p=document.getElementById('loginPass').value;
-  // If DB not loaded yet, use seed
-  if(!DB||!DB.users){ DB=JSON.parse(JSON.stringify(SEED)); }
-  const user=DB.users.find(x=>x.username===u&&x.password===p);
-  if(!user){document.getElementById('loginErr').textContent='❌ Invalid username or password.';return;}
-  currentUser=user;
-  document.getElementById('loginErr').textContent='';
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('appShell').style.display='block';
-  document.getElementById('sidebarUser').textContent=user.name+' ('+user.role+')';
-  document.getElementById('usersNav').style.display=user.role==='admin'?'flex':'none';
-  renderDashboard();
-}
-function doLogout(){
-  currentUser=null;
-  document.getElementById('appShell').style.display='none';
-  document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('loginUser').value='';
-  document.getElementById('loginPass').value='';
-}
-document.getElementById('loginPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
-
-// ─────────────────────────────────────
-//  NAVIGATION
-// ─────────────────────────────────────
-function showPage(id,el){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  if(el) el.classList.add('active');
-  ({dashboard:renderDashboard,products:()=>renderProducts(''),vendors:()=>renderVendors(''),
-    customers:()=>renderCustomers(''),purchase:()=>renderPurchase(''),sales:()=>renderSales(''),
-    inventory:renderInventory,users:renderUsers})[id]?.();
-}
-
-// ─────────────────────────────────────
-//  MODALS
-// ─────────────────────────────────────
-function closeModal(id){ document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
-
-function openModal(id){
-  // reset forms
-  if(id==='productModal'){
-    document.getElementById('productModalTitle').textContent='Add Product';
-    document.getElementById('editProductId').value='';
-    ['pHSN','pName','pCost','pPrice'].forEach(i=>document.getElementById(i).value='');
-  }
-  if(id==='vendorModal'){
-    document.getElementById('vendorModalTitle').textContent='Add Vendor';
-    document.getElementById('editVendorId').value='';
-    populateHSN();
-    ['vHSN','vProduct','vName','vPhone','vAddress'].forEach(i=>document.getElementById(i).value='');
-  }
-  if(id==='customerModal'){
-    document.getElementById('customerModalTitle').textContent='Add Customer';
-    document.getElementById('editCustomerId').value='';
-    ['cId','cName','cEmail','cAddress'].forEach(i=>document.getElementById(i).value='');
-  }
-  if(id==='purchaseModal'){
-    document.getElementById('purchaseModalTitle').textContent='New Purchase Entry';
-    document.getElementById('editPurchaseId').value='';
-    populateHSN();
-    ['puHSN','puProduct','puVendor','puUnits','puCost','puAmount'].forEach(i=>document.getElementById(i).value='');
-    document.getElementById('puDate').value=today();
-  }
-  if(id==='salesModal'){
-    document.getElementById('salesModalTitle').textContent='New Sales Entry';
-    document.getElementById('editSaleId').value='';
-    populateHSN();
-    ['saCustomer','saHSN','saProduct','saStock','saUnits','saPrice','saAmount'].forEach(i=>document.getElementById(i).value='');
-    document.getElementById('saDate').value=today();
-  }
-  if(id==='userModal'){
-    document.getElementById('userModalTitle').textContent='Add User';
-    document.getElementById('editUserId').value='';
-    ['uFullName','uUsername','uPassword'].forEach(i=>document.getElementById(i).value='');
-    document.getElementById('uRole').value='staff';
-  }
-  document.getElementById(id).classList.add('open');
-}
-
-function today(){ return new Date().toISOString().split('T')[0]; }
-
-// ─────────────────────────────────────
-//  TOAST
-// ─────────────────────────────────────
-let _toastTimer;
-function showToast(msg,type='ok'){
-  const t=document.getElementById('toast');
-  document.getElementById('toastIcon').textContent=type==='ok'?'✅':'❌';
-  document.getElementById('toastMsg').textContent=msg;
-  t.classList.remove('hidden');
-  clearTimeout(_toastTimer);
-  _toastTimer=setTimeout(()=>t.classList.add('hidden'),2600);
-}
-
-// ─────────────────────────────────────
-//  CONFIRM DELETE
-// ─────────────────────────────────────
-function confirmDelete(msg,cb){
-  document.getElementById('confirmMsg').textContent=msg;
-  document.getElementById('confirmOkBtn').onclick=()=>{cb();closeModal('confirmModal');};
-  document.getElementById('confirmModal').classList.add('open');
-}
-
-// ─────────────────────────────────────
-//  INVENTORY MAP (core calculation)
-// ─────────────────────────────────────
-function getInvMap(){
-  const m={};
-  DB.products.forEach(p=>{ m[p.hsn]={name:p.name,cost:p.cost,purchased:0,sold:0}; });
-  DB.purchases.forEach(p=>{ if(m[p.hsn]) m[p.hsn].purchased+=Number(p.units); });
-  DB.sales.forEach(s=>{ if(m[s.hsn]) m[s.hsn].sold+=Number(s.units); });
-  Object.keys(m).forEach(k=>{ m[k].stock=m[k].purchased-m[k].sold; m[k].stockAmt=m[k].stock*m[k].cost; });
-  return m;
-}
-
-// ─────────────────────────────────────
-//  DASHBOARD
-// ─────────────────────────────────────
-function renderDashboard(){
-  document.getElementById('dashDate').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const totPu=DB.purchases.reduce((a,b)=>a+Number(b.amount),0);
-  const totSa=DB.sales.reduce((a,b)=>a+Number(b.amount),0);
-  const inv=getInvMap();
-  const totStock=Object.values(inv).reduce((a,b)=>a+b.stockAmt,0);
-  const pl=totSa-totPu;
-  document.getElementById('dashCards').innerHTML=`
-    <div class="card"><div class="card-lbl">Total Purchase</div><div class="card-val blue">৳${fmt(totPu)}</div></div>
-    <div class="card"><div class="card-lbl">Total Sales</div><div class="card-val yellow">৳${fmt(totSa)}</div></div>
-    <div class="card"><div class="card-lbl">Profit / Loss</div><div class="card-val ${pl>=0?'green':'red'}">৳${fmt(pl)}</div></div>
-    <div class="card"><div class="card-lbl">Stock Value</div><div class="card-val blue">৳${fmt(totStock)}</div></div>`;
-
-  const low=Object.entries(inv).filter(([,i])=>i.stock<=5&&i.purchased>0);
-  const vMap={};
-  DB.vendors.forEach(v=>vMap[v.hsn]=v.phone);
-  const ab=document.getElementById('dashAlerts');
-  if(!low.length){
-    ab.style.borderColor='var(--success)';
-    ab.innerHTML=`<div class="alert-title" style="color:var(--success)">📦 Stock Alerts</div><div class="no-alert">✅ All products have healthy stock levels</div>`;
-  } else {
-    ab.style.borderColor='var(--warning)';
-    ab.innerHTML=`<div class="alert-title">⚠️ Low Stock Alerts (${low.length})</div>`+
-      low.map(([hsn,i])=>`<div class="alert-row"><div class="alert-dot"></div><span><b>${i.name}</b> — only <b style="color:var(--warning)">${i.stock}</b> units left &nbsp;·&nbsp; Vendor: ${vMap[hsn]||'—'}</span></div>`).join('');
-  }
-
-  const cTot={};
-  DB.sales.forEach(s=>{ cTot[s.customer]=(cTot[s.customer]||0)+Number(s.amount); });
-  const topC=Object.entries(cTot).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  document.getElementById('topCustTable').innerHTML=topC.length
-    ?topC.map(([n,a],i)=>`<tr><td>${i+1}. ${n}</td><td><b>৳${fmt(a)}</b></td></tr>`).join('')
-    :'<tr class="empty-row"><td colspan="2">No sales data yet</td></tr>';
-
-  const pTot={};
-  DB.sales.forEach(s=>{ pTot[s.product]=(pTot[s.product]||0)+Number(s.units); });
-  const topP=Object.entries(pTot).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  document.getElementById('topProdTable').innerHTML=topP.length
-    ?topP.map(([n,u],i)=>`<tr><td>${i+1}. ${n}</td><td><b>${u} units</b></td></tr>`).join('')
-    :'<tr class="empty-row"><td colspan="2">No sales data yet</td></tr>';
-}
-
-// ─────────────────────────────────────
-//  PRODUCTS
-// ─────────────────────────────────────
-function renderProducts(q){
-  const list=DB.products.filter(p=>!q||(p.name+p.hsn).toLowerCase().includes(q.toLowerCase()));
-  const ro=currentUser?.role==='staff';
-  document.getElementById('productsTable').innerHTML=list.length
-    ?list.map(p=>`<tr>
-      <td><span class="pill pill-blue">${p.hsn}</span></td>
-      <td><b>${p.name}</b></td>
-      <td>৳${fmt(p.cost)}</td>
-      <td>৳${fmt(p.price)}</td>
-      <td>${ro?'<span style="color:var(--text3)">—</span>':`<div class="act-btns">
-        <button class="btn btn-blue btn-sm" onclick='editProduct(${JSON.stringify(p)})'>✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}','${p.name}')">🗑️</button>
-      </div>`}</td></tr>`).join('')
-    :'<tr class="empty-row"><td colspan="5">No products found</td></tr>';
-}
-function editProduct(p){
-  document.getElementById('productModalTitle').textContent='Edit Product';
-  document.getElementById('editProductId').value=p.id;
-  document.getElementById('pHSN').value=p.hsn;
-  document.getElementById('pName').value=p.name;
-  document.getElementById('pCost').value=p.cost;
-  document.getElementById('pPrice').value=p.price;
-  document.getElementById('productModal').classList.add('open');
-}
-function saveProduct(){
-  const id=document.getElementById('editProductId').value;
-  const o={hsn:document.getElementById('pHSN').value.trim(),name:document.getElementById('pName').value.trim(),cost:Number(document.getElementById('pCost').value),price:Number(document.getElementById('pPrice').value)};
-  if(!o.hsn||!o.name){showToast('Please fill all fields','err');return;}
-  if(id){const i=DB.products.findIndex(p=>p.id===id);DB.products[i]={...DB.products[i],...o};}
-  else DB.products.push({id:uid(),...o});
-  saveDB();closeModal('productModal');renderProducts('');showToast('Product saved');
-}
-function deleteProduct(id,name){confirmDelete(`Delete product "${name}"?`,()=>{DB.products=DB.products.filter(p=>p.id!==id);saveDB();renderProducts('');showToast('Deleted');});}
-
-// ─────────────────────────────────────
-//  VENDORS
-// ─────────────────────────────────────
-function populateHSN(){
-  ['vHSN','puHSN','saHSN'].forEach(sid=>{
-    const el=document.getElementById(sid); if(!el)return;
-    const cur=el.value;
-    el.innerHTML='<option value="">Select HSN</option>'+DB.products.map(p=>`<option value="${p.hsn}">${p.hsn} — ${p.name}</option>`).join('');
-    el.value=cur;
   });
-  const saC=document.getElementById('saCustomer');
-  if(saC){const cur=saC.value;saC.innerHTML='<option value="">Select Customer</option>'+DB.customers.map(c=>`<option value="${c.custId}">${c.name}</option>`).join('');saC.value=cur;}
-}
-function autoFillVendorProduct(){const p=DB.products.find(x=>x.hsn===document.getElementById('vHSN').value);document.getElementById('vProduct').value=p?p.name:'';}
-function renderVendors(q){
-  const list=DB.vendors.filter(v=>!q||(v.name+v.product+v.hsn).toLowerCase().includes(q.toLowerCase()));
-  const ro=currentUser?.role==='staff';
-  document.getElementById('vendorsTable').innerHTML=list.length
-    ?list.map(v=>`<tr>
-      <td><span class="pill pill-blue">${v.hsn}</span></td>
-      <td>${v.product}</td><td><b>${v.name}</b></td><td>${v.phone}</td><td>${v.address}</td>
-      <td>${ro?'<span style="color:var(--text3)">—</span>':`<div class="act-btns">
-        <button class="btn btn-blue btn-sm" onclick='editVendor(${JSON.stringify(v)})'>✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteVendor('${v.id}','${v.name}')">🗑️</button>
-      </div>`}</td></tr>`).join('')
-    :'<tr class="empty-row"><td colspan="6">No vendors found</td></tr>';
-}
-function editVendor(v){
-  document.getElementById('vendorModalTitle').textContent='Edit Vendor';
-  document.getElementById('editVendorId').value=v.id;
-  populateHSN();
-  document.getElementById('vHSN').value=v.hsn;
-  document.getElementById('vProduct').value=v.product;
-  document.getElementById('vName').value=v.name;
-  document.getElementById('vPhone').value=v.phone;
-  document.getElementById('vAddress').value=v.address;
-  document.getElementById('vendorModal').classList.add('open');
-}
-function saveVendor(){
-  const id=document.getElementById('editVendorId').value;
-  const o={hsn:document.getElementById('vHSN').value,product:document.getElementById('vProduct').value,name:document.getElementById('vName').value.trim(),phone:document.getElementById('vPhone').value.trim(),address:document.getElementById('vAddress').value.trim()};
-  if(!o.hsn||!o.name){showToast('Please fill all fields','err');return;}
-  if(id){const i=DB.vendors.findIndex(v=>v.id===id);DB.vendors[i]={...DB.vendors[i],...o};}
-  else DB.vendors.push({id:uid(),...o});
-  saveDB();closeModal('vendorModal');renderVendors('');showToast('Vendor saved');
-}
-function deleteVendor(id,name){confirmDelete(`Delete vendor "${name}"?`,()=>{DB.vendors=DB.vendors.filter(v=>v.id!==id);saveDB();renderVendors('');showToast('Deleted');});}
-
-// ─────────────────────────────────────
-//  CUSTOMERS
-// ─────────────────────────────────────
-function renderCustomers(q){
-  const list=DB.customers.filter(c=>!q||(c.name+c.email+c.custId).toLowerCase().includes(q.toLowerCase()));
-  const ro=currentUser?.role==='staff';
-  document.getElementById('customersTable').innerHTML=list.length
-    ?list.map(c=>`<tr>
-      <td><span class="pill pill-yellow">#${c.custId}</span></td>
-      <td><b>${c.name}</b></td><td>${c.email}</td><td>${c.address}</td>
-      <td>${ro?'<span style="color:var(--text3)">—</span>':`<div class="act-btns">
-        <button class="btn btn-blue btn-sm" onclick='editCustomer(${JSON.stringify(c)})'>✏️ Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteCustomer('${c.id}','${c.name}')">🗑️</button>
-      </div>`}</td></tr>`).join('')
-    :'<tr class="empty-row"><td colspan="5">No customers found</td></tr>';
-}
-function editCustomer(c){
-  document.getElementById('customerModalTitle').textContent='Edit Customer';
-  document.getElementById('editCustomerId').value=c.id;
-  document.getElementById('cId').value=c.custId;
-  document.getElementById('cName').value=c.name;
-  document.getElementById('cEmail').value=c.email;
-  document.getElementById('cAddress').value=c.address;
-  document.getElementById('customerModal').classList.add('open');
-}
-function saveCustomer(){
-  const id=document.getElementById('editCustomerId').value;
-  const o={custId:document.getElementById('cId').value.trim(),name:document.getElementById('cName').value.trim(),email:document.getElementById('cEmail').value.trim(),address:document.getElementById('cAddress').value.trim()};
-  if(!o.custId||!o.name){showToast('Please fill all fields','err');return;}
-  if(id){const i=DB.customers.findIndex(c=>c.id===id);DB.customers[i]={...DB.customers[i],...o};}
-  else DB.customers.push({id:uid(),...o});
-  saveDB();closeModal('customerModal');renderCustomers('');showToast('Customer saved');
-}
-function deleteCustomer(id,name){confirmDelete(`Delete customer "${name}"?`,()=>{DB.customers=DB.customers.filter(c=>c.id!==id);saveDB();renderCustomers('');showToast('Deleted');});}
-
-// ─────────────────────────────────────
-//  PURCHASE
-// ─────────────────────────────────────
-function autoFillPurchase(){
-  const hsn=document.getElementById('puHSN').value;
-  const prod=DB.products.find(p=>p.hsn===hsn);
-  const vend=DB.vendors.find(v=>v.hsn===hsn);
-  document.getElementById('puProduct').value=prod?prod.name:'';
-  document.getElementById('puVendor').value=vend?vend.name:'';
-  document.getElementById('puCost').value=prod?prod.cost:'';
-  calcPurchaseAmt();
-}
-function calcPurchaseAmt(){
-  const u=Number(document.getElementById('puUnits').value)||0;
-  const c=Number(document.getElementById('puCost').value)||0;
-  document.getElementById('puAmount').value=u&&c?u*c:'';
-}
-function renderPurchase(q){
-  const list=DB.purchases.filter(p=>!q||(p.product+p.vendor+p.hsn).toLowerCase().includes(q.toLowerCase()));
-  document.getElementById('purchaseTable').innerHTML=list.length
-    ?list.map(p=>`<tr>
-      <td><span class="pill pill-blue">${p.hsn}</span></td>
-      <td><b>${p.product}</b></td><td>${p.vendor}</td><td>${p.date}</td>
-      <td>${p.units}</td><td>৳${fmt(p.cost)}</td><td><b>৳${fmt(p.amount)}</b></td>
-      <td><div class="act-btns">
-        <button class="btn btn-blue btn-sm" onclick='editPurchase(${JSON.stringify(p)})'>✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deletePurchase('${p.id}')">🗑️</button>
-      </div></td></tr>`).join('')
-    :'<tr class="empty-row"><td colspan="8">No purchase entries yet</td></tr>';
-}
-function editPurchase(p){
-  document.getElementById('purchaseModalTitle').textContent='Edit Purchase';
-  document.getElementById('editPurchaseId').value=p.id;
-  populateHSN();
-  document.getElementById('puHSN').value=p.hsn;
-  document.getElementById('puProduct').value=p.product;
-  document.getElementById('puVendor').value=p.vendor;
-  document.getElementById('puDate').value=p.date;
-  document.getElementById('puUnits').value=p.units;
-  document.getElementById('puCost').value=p.cost;
-  document.getElementById('puAmount').value=p.amount;
-  document.getElementById('purchaseModal').classList.add('open');
-}
-function savePurchase(){
-  const id=document.getElementById('editPurchaseId').value;
-  const o={hsn:document.getElementById('puHSN').value,product:document.getElementById('puProduct').value,vendor:document.getElementById('puVendor').value,date:document.getElementById('puDate').value,units:Number(document.getElementById('puUnits').value),cost:Number(document.getElementById('puCost').value),amount:Number(document.getElementById('puAmount').value)};
-  if(!o.hsn||!o.units||!o.date){showToast('Please fill all fields','err');return;}
-  if(id){const i=DB.purchases.findIndex(p=>p.id===id);DB.purchases[i]={...DB.purchases[i],...o};}
-  else DB.purchases.push({id:uid(),...o});
-  saveDB();closeModal('purchaseModal');renderPurchase('');showToast('Purchase entry saved');
-}
-function deletePurchase(id){confirmDelete('Delete this purchase entry?',()=>{DB.purchases=DB.purchases.filter(p=>p.id!==id);saveDB();renderPurchase('');showToast('Deleted');});}
-
-// ─────────────────────────────────────
-//  SALES
-// ─────────────────────────────────────
-function autoFillSales(){
-  const hsn=document.getElementById('saHSN').value;
-  const prod=DB.products.find(p=>p.hsn===hsn);
-  const inv=getInvMap();
-  document.getElementById('saProduct').value=prod?prod.name:'';
-  document.getElementById('saPrice').value=prod?prod.price:'';
-  document.getElementById('saStock').value=inv[hsn]?inv[hsn].stock:'';
-  calcSalesAmt();
-}
-function calcSalesAmt(){
-  const u=Number(document.getElementById('saUnits').value)||0;
-  const p=Number(document.getElementById('saPrice').value)||0;
-  document.getElementById('saAmount').value=u&&p?u*p:'';
-}
-function renderSales(q){
-  const list=DB.sales.filter(s=>!q||(s.product+s.customer+s.hsn).toLowerCase().includes(q.toLowerCase()));
-  document.getElementById('salesTable').innerHTML=list.length
-    ?list.map(s=>`<tr>
-      <td><b>${s.customer}</b></td>
-      <td><span class="pill pill-blue">${s.hsn}</span></td>
-      <td>${s.product}</td><td>${s.date}</td>
-      <td>${s.units}</td><td>৳${fmt(s.price)}</td><td><b>৳${fmt(s.amount)}</b></td>
-      <td><div class="act-btns">
-        <button class="btn btn-blue btn-sm" onclick='editSale(${JSON.stringify(s)})'>✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteSale('${s.id}')">🗑️</button>
-      </div></td></tr>`).join('')
-    :'<tr class="empty-row"><td colspan="8">No sales entries yet</td></tr>';
-}
-function editSale(s){
-  document.getElementById('salesModalTitle').textContent='Edit Sale';
-  document.getElementById('editSaleId').value=s.id;
-  populateHSN();
-  document.getElementById('saCustomer').value=s.custId;
-  document.getElementById('saHSN').value=s.hsn;
-  document.getElementById('saProduct').value=s.product;
-  document.getElementById('saDate').value=s.date;
-  document.getElementById('saStock').value='';
-  document.getElementById('saUnits').value=s.units;
-  document.getElementById('saPrice').value=s.price;
-  document.getElementById('saAmount').value=s.amount;
-  document.getElementById('salesModal').classList.add('open');
-}
-function saveSale(){
-  const id=document.getElementById('editSaleId').value;
-  const custId=document.getElementById('saCustomer').value;
-  const cust=DB.customers.find(c=>c.custId===custId);
-  const hsn=document.getElementById('saHSN').value;
-  const units=Number(document.getElementById('saUnits').value);
-  if(!custId||!hsn||!units){showToast('Please fill all fields','err');return;}
-  if(!id){
-    const inv=getInvMap();
-    if(inv[hsn]&&units>inv[hsn].stock){showToast(`Only ${inv[hsn].stock} units in stock!`,'err');return;}
-  }
-  const o={custId,customer:cust?cust.name:'Unknown',hsn,product:document.getElementById('saProduct').value,date:document.getElementById('saDate').value,units,price:Number(document.getElementById('saPrice').value),amount:Number(document.getElementById('saAmount').value)};
-  if(id){const i=DB.sales.findIndex(s=>s.id===id);DB.sales[i]={...DB.sales[i],...o};}
-  else DB.sales.push({id:uid(),...o});
-  saveDB();closeModal('salesModal');renderSales('');showToast('Sale entry saved');
-}
-function deleteSale(id){confirmDelete('Delete this sale entry?',()=>{DB.sales=DB.sales.filter(s=>s.id!==id);saveDB();renderSales('');showToast('Deleted');});}
-
-// ─────────────────────────────────────
-//  INVENTORY
-// ─────────────────────────────────────
-function renderInventory(){
-  const inv=getInvMap();
-  document.getElementById('inventoryTable').innerHTML=Object.entries(inv).map(([hsn,i])=>{
-    const pct=i.purchased>0?Math.min(100,Math.round(i.stock/i.purchased*100)):0;
-    const col=pct>40?'var(--success)':pct>15?'var(--warning)':'var(--danger)';
-    const status=i.stock<=0?'<span class="pill pill-red">Out of Stock</span>':i.stock<=5?'<span class="pill pill-red">Low Stock</span>':'<span class="pill pill-green">In Stock</span>';
-    return`<tr>
-      <td><span class="pill pill-blue">${hsn}</span></td>
-      <td><b>${i.name}</b></td>
-      <td>৳${fmt(i.cost)}</td>
-      <td>${i.purchased}</td><td>${i.sold}</td>
-      <td><b>${i.stock}</b><div class="stock-bar-wrap"><div class="stock-bar" style="width:${pct}%;background:${col}"></div></div></td>
-      <td>৳${fmt(i.stockAmt)}</td>
-      <td>${status}</td></tr>`;
-  }).join('') || '<tr class="empty-row"><td colspan="8">No inventory data</td></tr>';
-}
-
-// ─────────────────────────────────────
-//  USERS
-// ─────────────────────────────────────
-function renderUsers(){
-  const roleColor={admin:'pill-red',manager:'pill-yellow',staff:'pill-green'};
-  document.getElementById('usersList').innerHTML=DB.users.map(u=>`
-    <div class="user-card">
-      <div class="user-avatar">${u.name[0].toUpperCase()}</div>
-      <div>
-        <div class="user-name">${u.name}</div>
-        <div class="user-role">@${u.username} &nbsp;<span class="pill ${roleColor[u.role]||'pill-blue'}">${u.role}</span></div>
-      </div>
-      <div class="user-actions">
-        <button class="btn btn-blue btn-sm" onclick='editUser(${JSON.stringify(u)})'>✏️ Edit</button>
-        ${u.id!==currentUser?.id?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${u.name}')">🗑️</button>`:'<span style="font-size:11px;color:var(--text3);margin-left:4px">(you)</span>'}
-      </div>
-    </div>`).join('');
-}
-function editUser(u){
-  document.getElementById('userModalTitle').textContent='Edit User';
-  document.getElementById('editUserId').value=u.id;
-  document.getElementById('uFullName').value=u.name;
-  document.getElementById('uUsername').value=u.username;
-  document.getElementById('uPassword').value=u.password;
-  document.getElementById('uRole').value=u.role;
-  document.getElementById('userModal').classList.add('open');
-}
-function saveUser(){
-  const id=document.getElementById('editUserId').value;
-  const o={name:document.getElementById('uFullName').value.trim(),username:document.getElementById('uUsername').value.trim(),password:document.getElementById('uPassword').value,role:document.getElementById('uRole').value};
-  if(!o.name||!o.username||!o.password){showToast('Fill all fields','err');return;}
-  if(o.password.length<6){showToast('Password must be 6+ characters','err');return;}
-  if(!id&&DB.users.find(u=>u.username===o.username)){showToast('Username already taken','err');return;}
-  if(id){const i=DB.users.findIndex(u=>u.id===id);DB.users[i]={...DB.users[i],...o};}
-  else DB.users.push({id:uid(),...o});
-  saveDB();closeModal('userModal');renderUsers();showToast('User saved');
-}
-function deleteUser(id,name){
-  if(id===currentUser?.id){showToast("Can't delete yourself",'err');return;}
-  confirmDelete(`Delete user "${name}"?`,()=>{DB.users=DB.users.filter(u=>u.id!==id);saveDB();renderUsers();showToast('User deleted');});
-}
-
-
-// ─────────────────────────────────────
-//  SYNC INDICATOR
-// ─────────────────────────────────────
-function setSyncStatus(state){
-  const dot=document.getElementById('syncDot');
-  const lbl=document.getElementById('syncStatus');
-  if(!dot||!lbl)return;
-  dot.className='sync-dot'+( state==='syncing'?' syncing':state==='error'?' error':'');
-  lbl.textContent=state==='syncing'?'Saving…':state==='error'?'Save failed':'Saved ✓';
-}
-const _origSaveDB = saveDB;
-window.saveDB = async function(){
-  setSyncStatus('syncing');
-  try{ await _origSaveDB(); setSyncStatus('ok'); }
-  catch(e){ setSyncStatus('error'); }
-};
-
-// ─────────────────────────────────────
-//  EXPORT TO EXCEL (CSV)
-// ─────────────────────────────────────
-function exportExcel(){
-  const sheets = {
-    Products: {
-      headers: ['HSN Code','Product Name','Cost','Selling Price'],
-      rows: DB.products.map(p=>[p.hsn, p.name, p.cost, p.price])
-    },
-    Vendors: {
-      headers: ['HSN Code','Product','Vendor Name','Phone','Address'],
-      rows: DB.vendors.map(v=>[v.hsn, v.product, v.name, v.phone, v.address])
-    },
-    Customers: {
-      headers: ['Customer ID','Name','Email','Address'],
-      rows: DB.customers.map(c=>[c.custId, c.name, c.email, c.address])
-    },
-    Purchases: {
-      headers: ['HSN','Product','Vendor','Date','Units','Cost','Amount'],
-      rows: DB.purchases.map(p=>[p.hsn, p.product, p.vendor, p.date, p.units, p.cost, p.amount])
-    },
-    Sales: {
-      headers: ['Customer','HSN','Product','Date','Units','Price','Amount'],
-      rows: DB.sales.map(s=>[s.customer, s.hsn, s.product, s.date, s.units, s.price, s.amount])
-    },
-    Inventory: {
-      headers: ['HSN','Product','Cost','Purchased','Sold','Stock','Stock Value','Status'],
-      rows: (()=>{
-        const inv=getInvMap();
-        return Object.entries(inv).map(([hsn,i])=>[hsn, i.name, i.cost, i.purchased, i.sold, i.stock, i.stockAmt, i.stock<=0?'Out of Stock':i.stock<=5?'Low Stock':'In Stock']);
-      })()
-    }
-  };
-  let csv = '';
-  Object.entries(sheets).forEach(([name, sheet])=>{
-    csv += '
-=== ' + name + ' ===
-';
-    csv += sheet.headers.join(',') + '
-';
-    sheet.rows.forEach(r=>{ csv += r.map(v=>'"'+(String(v||'').replace(/"/g,'""'))+'"').join(',') + '
-'; });
-  });
-  const blob = new Blob([csv], {type:'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'InvenTrack_Export_' + new Date().toISOString().split('T')[0] + '.csv';
-  a.click();
-  showToast('Exported successfully');
-}
-
-// ─────────────────────────────────────
-//  BACKUP & RESTORE
-// ─────────────────────────────────────
-function backupData(){
-  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'InvenTrack_Backup_' + new Date().toISOString().split('T')[0] + '.json';
-  a.click();
-  showToast('Backup downloaded');
-}
-function restoreData(e){
-  const file = e.target.files[0]; if(!file)return;
-  const reader = new FileReader();
-  reader.onload = async function(ev){
-    try{
-      const data = JSON.parse(ev.target.result);
-      if(!data.products||!data.sales){showToast('Invalid backup file','err');return;}
-      DB = data;
-      await saveDB();
-      showToast('Backup restored successfully');
-      renderDashboard();
-    }catch(err){ showToast('Could not read file','err'); }
-  };
-  reader.readAsText(file);
-}
-
-// ─────────────────────────────────────
-//  BOOT
-// ─────────────────────────────────────
-(async()=>{ await loadDB(); })();
 </script>
+
 </body>
 </html>
