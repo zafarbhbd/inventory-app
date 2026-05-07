@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transactions — Students Point</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<div class="main">
+  <div class="pg-header">
+    <div class="pg-title">Transactions</div>
+    <div class="pg-sub">Purchase entry, sales entry, service revenue and operating expenses</div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('purchase',this)">🛒 Purchase Entry</button>
+    <button class="tab-btn" onclick="switchTab('sales',this)">💰 Sales Entry</button>
+    <button class="tab-btn" onclick="switchTab('service',this)">🛎️ Service Revenue</button>
+    <button class="tab-btn" onclick="switchTab('opex',this)">💸 Operating Expenses</button>
+  </div>
+
+  <!-- PURCHASE -->
+  <div class="tab-panel active" id="tab-purchase">
+    <div class="toolbar">
+      <input class="search-input" placeholder="🔍 Search purchases…" oninput="renderPurchase(this.value)">
+      <button class="btn btn-primary" onclick="openPurchaseModal()">＋ New Purchase</button>
+    </div>
+    <div class="tbox"><table>
+      <thead><tr><th>Date</th><th>HSN</th><th>Product</th><th>Vendor</th><th>Units</th><th>Cost (৳)</th><th>Amount (৳)</th><th>Payment</th><th>Actions</th></tr></thead>
+      <tbody id="purchaseTable"></tbody>
+    </table></div>
+  </div>
+
+  <!-- SALES -->
+  <div class="tab-panel" id="tab-sales">
+    <div class="toolbar">
+      <input class="search-input" placeholder="🔍 Search sales…" oninput="renderSales(this.value)">
+      <button class="btn btn-primary" onclick="openSalesModal()">＋ New Sale</button>
+    </div>
+    <div class="tbox"><table>
+      <thead><tr><th>Date</th><th>Customer</th><th>Product</th><th>Units</th><th>Price (৳)</th><th>Amount (৳)</th><th>Payment</th><th>Actions</th></tr></thead>
+      <tbody id="salesTable"></tbody>
+    </table></div>
+  </div>
+
+  <!-- SERVICE REVENUE -->
+  <div class="tab-panel" id="tab-service">
+    <div class="info-box">🛎️ <b>Service Revenue</b> — Record any income earned from services (repair, consulting, installation, etc.) rather than product sales. This will be included in the Income Statement as revenue.</div>
+    <div class="toolbar">
+      <input class="search-input" placeholder="🔍 Search service revenue…" oninput="renderService(this.value)">
+      <button class="btn btn-primary" onclick="openModal('serviceModal')">＋ Add Service Revenue</button>
+    </div>
+    <div class="tbox"><table>
+      <thead><tr><th>ID</th><th>Date</th><th>Service Name</th><th>Description</th><th>Amount (৳)</th><th>Actions</th></tr></thead>
+      <tbody id="serviceTable"></tbody>
+    </table></div>
+  </div>
+
+  <!-- OPERATING EXPENSES -->
+  <div class="tab-panel" id="tab-opex">
+    <div class="info-box">💸 <b>Operating Expenses</b> — Record all business expenses (rent, salary, utility, etc.). These will appear under Expenses in the Income Statement.</div>
+    <div class="toolbar">
+      <input class="search-input" placeholder="🔍 Search expenses…" oninput="renderOpex(this.value)">
+      <button class="btn btn-primary" onclick="openModal('opexModal')">＋ Add Expense</button>
+    </div>
+    <div class="tbox"><table>
+      <thead><tr><th>ID</th><th>Date</th><th>Expense Name</th><th>Category</th><th>Amount (৳)</th><th>Actions</th></tr></thead>
+      <tbody id="opexTable"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- PURCHASE MODAL -->
+<div class="modal-overlay" id="purchaseModal">
+  <div class="modal">
+    <div class="modal-title" id="purchaseModalTitle">New Purchase Entry</div>
+    <div class="modal-sub">Record stock received from a vendor</div>
+    <input type="hidden" id="editPurchaseId">
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">HSN Code</label>
+        <select class="form-select" id="puHSN" onchange="autoFillPurchase()"><option value="">Select HSN</option></select></div>
+      <div class="form-row"><label class="form-lbl">Product Name</label><input class="form-input" id="puProduct" readonly placeholder="Auto-filled"></div>
+    </div>
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Vendor</label><input class="form-input" id="puVendor" readonly placeholder="Auto-filled"></div>
+      <div class="form-row"><label class="form-lbl">Date</label><input class="form-input" id="puDate" type="date"></div>
+    </div>
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Units</label><input class="form-input" id="puUnits" type="number" min="1" placeholder="0" oninput="calcPurchaseAmt()"></div>
+      <div class="form-row"><label class="form-lbl">Cost / Unit (৳)</label><input class="form-input" id="puCost" readonly placeholder="Auto-filled"></div>
+    </div>
+    <div class="form-row"><label class="form-lbl">Total Amount (৳)</label><input class="form-input" id="puAmount" readonly placeholder="Auto-calculated"></div>
+    <div class="form-row"><label class="form-lbl">Payment Status</label>
+      <select class="form-select" id="puPaid">
+        <option value="paid">Paid (cash out recorded)</option>
+        <option value="credit">On Credit — pay later (Accounts Payable)</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('purchaseModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePurchase()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- SALES MODAL -->
+<div class="modal-overlay" id="salesModal">
+  <div class="modal">
+    <div class="modal-title" id="salesModalTitle">New Sales Entry</div>
+    <div class="modal-sub">Record stock sold to a customer</div>
+    <input type="hidden" id="editSaleId">
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Customer</label>
+        <select class="form-select" id="saCustomer"><option value="">Select Customer</option></select></div>
+      <div class="form-row"><label class="form-lbl">HSN Code</label>
+        <select class="form-select" id="saHSN" onchange="autoFillSales()"><option value="">Select HSN</option></select></div>
+    </div>
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Product Name</label><input class="form-input" id="saProduct" readonly placeholder="Auto-filled"></div>
+      <div class="form-row"><label class="form-lbl">Date</label><input class="form-input" id="saDate" type="date"></div>
+    </div>
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Available Stock</label><input class="form-input" id="saStock" readonly></div>
+      <div class="form-row"><label class="form-lbl">Units to Sell</label><input class="form-input" id="saUnits" type="number" min="1" placeholder="0" oninput="calcSalesAmt()"></div>
+    </div>
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Price / Unit (৳)</label><input class="form-input" id="saPrice" readonly></div>
+      <div class="form-row"><label class="form-lbl">Total Amount (৳)</label><input class="form-input" id="saAmount" readonly></div>
+    </div>
+    <div class="form-row"><label class="form-lbl">Payment Status</label>
+      <select class="form-select" id="saPaid">
+        <option value="paid">Paid (cash in recorded)</option>
+        <option value="credit">On Credit — receive later (Accounts Receivable)</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('salesModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSale()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- SERVICE MODAL -->
+<div class="modal-overlay" id="serviceModal">
+  <div class="modal">
+    <div class="modal-title" id="serviceModalTitle">Add Service Revenue</div>
+    <div class="modal-sub">Record income from a service provided</div>
+    <input type="hidden" id="editServiceId">
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Service Name</label><input class="form-input" id="svcName" placeholder="e.g. Laptop Repair"></div>
+      <div class="form-row"><label class="form-lbl">Date</label><input class="form-input" id="svcDate" type="date"></div>
+    </div>
+    <div class="form-row"><label class="form-lbl">Description (optional)</label><input class="form-input" id="svcDesc" placeholder="e.g. Fixed motherboard for Ram Sales"></div>
+    <div class="form-row"><label class="form-lbl">Amount (৳)</label><input class="form-input" id="svcAmount" type="number" min="0" placeholder="0"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('serviceModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveService()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- OPEX MODAL -->
+<div class="modal-overlay" id="opexModal">
+  <div class="modal">
+    <div class="modal-title" id="opexModalTitle">Add Operating Expense</div>
+    <div class="modal-sub">Record a business expense</div>
+    <input type="hidden" id="editOpexId">
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Expense Name</label><input class="form-input" id="opName" placeholder="e.g. Office Rent"></div>
+      <div class="form-row"><label class="form-lbl">Date</label><input class="form-input" id="opDate" type="date"></div>
+    </div>
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Category</label>
+        <select class="form-select" id="opCategory">
+          <option value="Rent Expense">Rent Expense</option>
+          <option value="Salary Expense">Salary Expense</option>
+          <option value="Utility Expense">Utility Expense</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-row"><label class="form-lbl">Amount (৳)</label><input class="form-input" id="opAmount" type="number" min="0" placeholder="0"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('opexModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveOpex()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal confirm-modal">
+    <div class="confirm-icon">🗑️</div>
+    <div class="modal-title">Delete?</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast hidden" id="toast"><span id="toastIcon">✅</span> <span id="toastMsg"></span></div>
+<script src="firebase-config.js"></script>
+<script src="db.js"></script>
+<script src="sidebar.js"></script>
+<script>
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  btn.classList.add('active');
+}
+function openModal(id){
+  if(id==='serviceModal'){
+    document.getElementById('serviceModalTitle').textContent='Add Service Revenue';
+    document.getElementById('editServiceId').value='';
+    ['svcName','svcDesc','svcAmount'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('svcDate').value=today();
+  }
+  if(id==='opexModal'){
+    document.getElementById('opexModalTitle').textContent='Add Operating Expense';
+    document.getElementById('editOpexId').value='';
+    ['opName','opAmount'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('opDate').value=today();
+    document.getElementById('opCategory').value='Rent Expense';
+  }
+  document.getElementById(id).classList.add('open');
+}
+function openPurchaseModal(){
+  document.getElementById('purchaseModalTitle').textContent='New Purchase Entry';
+  document.getElementById('editPurchaseId').value='';
+  const opts='<option value="">Select HSN</option>'+(DB.products||[]).map(p=>`<option value="${p.hsn}">${p.hsn} — ${p.name}</option>`).join('');
+  document.getElementById('puHSN').innerHTML=opts;
+  ['puHSN','puProduct','puVendor','puUnits','puCost','puAmount'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('puDate').value=today();
+  document.getElementById('puPaid').value='paid';
+  document.getElementById('purchaseModal').classList.add('open');
+}
+function openSalesModal(){
+  document.getElementById('salesModalTitle').textContent='New Sales Entry';
+  document.getElementById('editSaleId').value='';
+  const hsnOpts='<option value="">Select HSN</option>'+(DB.products||[]).map(p=>`<option value="${p.hsn}">${p.hsn} — ${p.name}</option>`).join('');
+  document.getElementById('saHSN').innerHTML=hsnOpts;
+  const custOpts='<option value="">Select Customer</option>'+(DB.customers||[]).map(c=>`<option value="${c.custId}">${c.name}</option>`).join('');
+  document.getElementById('saCustomer').innerHTML=custOpts;
+  ['saCustomer','saHSN','saProduct','saStock','saUnits','saPrice','saAmount'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('saDate').value=today();
+  document.getElementById('saPaid').value='paid';
+  document.getElementById('salesModal').classList.add('open');
+}
+function autoFillPurchase(){
+  const hsn=document.getElementById('puHSN').value;
+  const prod=DB.products.find(p=>p.hsn===hsn);
+  const vend=DB.vendors.find(v=>v.hsn===hsn);
+  document.getElementById('puProduct').value=prod?prod.name:'';
+  document.getElementById('puVendor').value=vend?vend.name:'';
+  document.getElementById('puCost').value=prod?prod.cost:'';
+  calcPurchaseAmt();
+}
+function calcPurchaseAmt(){
+  const u=Number(document.getElementById('puUnits').value)||0;
+  const c=Number(document.getElementById('puCost').value)||0;
+  document.getElementById('puAmount').value=u&&c?u*c:'';
+}
+function autoFillSales(){
+  const hsn=document.getElementById('saHSN').value;
+  const prod=DB.products.find(p=>p.hsn===hsn);
+  const inv=getInvMap();
+  document.getElementById('saProduct').value=prod?prod.name:'';
+  document.getElementById('saPrice').value=prod?prod.price:'';
+  document.getElementById('saStock').value=inv[hsn]?inv[hsn].stock:'';
+  calcSalesAmt();
+}
+function calcSalesAmt(){
+  const u=Number(document.getElementById('saUnits').value)||0;
+  const p=Number(document.getElementById('saPrice').value)||0;
+  document.getElementById('saAmount').value=u&&p?u*p:'';
+}
+
+// ─── PURCHASE CRUD ───────────────────────────
+function renderPurchase(q=''){
+  const list=[...(DB.purchases||[])].filter(p=>!q||(p.product+p.vendor).toLowerCase().includes(q.toLowerCase()))
+    .sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('purchaseTable').innerHTML=list.length
+    ?list.map(p=>`<tr>
+        <td>${p.date}</td>
+        <td><span class="pill pill-blue">${p.hsn}</span></td>
+        <td><b>${p.product}</b></td><td>${p.vendor}</td><td>${p.units}</td>
+        <td>৳${fmt(p.cost)}</td><td><b>৳${fmt(p.amount)}</b></td>
+        <td><span class="pill ${p.paid==='paid'?'pill-green':'pill-yellow'}">${p.paid==='paid'?'Paid':'Credit'}</span></td>
+        <td><div class="act-btns">
+          <button class="btn btn-blue btn-sm" onclick='editPurchase(${JSON.stringify(p)})'>✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="delPurchase('${p.id}')">🗑️</button>
+        </div></td></tr>`).join('')
+    :'<tr class="empty-row"><td colspan="9">No purchase entries yet</td></tr>';
+}
+function editPurchase(p){
+  document.getElementById('purchaseModalTitle').textContent='Edit Purchase';
+  document.getElementById('editPurchaseId').value=p.id;
+  const opts='<option value="">Select HSN</option>'+(DB.products||[]).map(x=>`<option value="${x.hsn}">${x.hsn} — ${x.name}</option>`).join('');
+  document.getElementById('puHSN').innerHTML=opts;
+  document.getElementById('puHSN').value=p.hsn;
+  document.getElementById('puProduct').value=p.product;document.getElementById('puVendor').value=p.vendor;
+  document.getElementById('puDate').value=p.date;document.getElementById('puUnits').value=p.units;
+  document.getElementById('puCost').value=p.cost;document.getElementById('puAmount').value=p.amount;
+  document.getElementById('puPaid').value=p.paid||'paid';
+  document.getElementById('purchaseModal').classList.add('open');
+}
+function savePurchase(){
+  const id=document.getElementById('editPurchaseId').value;
+  const o={hsn:document.getElementById('puHSN').value,product:document.getElementById('puProduct').value,
+    vendor:document.getElementById('puVendor').value,date:document.getElementById('puDate').value,
+    units:Number(document.getElementById('puUnits').value),cost:Number(document.getElementById('puCost').value),
+    amount:Number(document.getElementById('puAmount').value),paid:document.getElementById('puPaid').value};
+  if(!o.hsn||!o.units||!o.date){showToast('Fill all fields','err');return;}
+  if(id){const i=DB.purchases.findIndex(p=>p.id===id);DB.purchases[i]={...DB.purchases[i],...o};}
+  else{
+    DB.purchases.push({id:uid(),...o});
+    if(o.paid==='paid') DB.cash.push({id:uid(),type:'out',category:'Purchase',date:o.date,amount:o.amount,note:`Purchase: ${o.product}`});
+  }
+  saveDB();closeModal('purchaseModal');renderPurchase();showToast('Purchase saved');
+}
+function delPurchase(id){confirmDelete('Delete this purchase entry?',()=>{DB.purchases=DB.purchases.filter(p=>p.id!==id);saveDB();renderPurchase();showToast('Deleted');});}
+
+// ─── SALES CRUD ──────────────────────────────
+function renderSales(q=''){
+  const list=[...(DB.sales||[])].filter(s=>!q||(s.product+s.customer).toLowerCase().includes(q.toLowerCase()))
+    .sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('salesTable').innerHTML=list.length
+    ?list.map(s=>`<tr>
+        <td>${s.date}</td><td><b>${s.customer}</b></td><td>${s.product}</td>
+        <td>${s.units}</td><td>৳${fmt(s.price)}</td><td><b>৳${fmt(s.amount)}</b></td>
+        <td><span class="pill ${s.paid==='paid'?'pill-green':'pill-yellow'}">${s.paid==='paid'?'Paid':'Credit'}</span></td>
+        <td><div class="act-btns">
+          <button class="btn btn-blue btn-sm" onclick='editSale(${JSON.stringify(s)})'>✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="delSale('${s.id}')">🗑️</button>
+        </div></td></tr>`).join('')
+    :'<tr class="empty-row"><td colspan="8">No sales entries yet</td></tr>';
+}
+function editSale(s){
+  document.getElementById('salesModalTitle').textContent='Edit Sale';
+  document.getElementById('editSaleId').value=s.id;
+  const hsnOpts='<option value="">Select HSN</option>'+(DB.products||[]).map(p=>`<option value="${p.hsn}">${p.hsn} — ${p.name}</option>`).join('');
+  document.getElementById('saHSN').innerHTML=hsnOpts;
+  const custOpts='<option value="">Select Customer</option>'+(DB.customers||[]).map(c=>`<option value="${c.custId}">${c.name}</option>`).join('');
+  document.getElementById('saCustomer').innerHTML=custOpts;
+  document.getElementById('saCustomer').value=s.custId;document.getElementById('saHSN').value=s.hsn;
+  document.getElementById('saProduct').value=s.product;document.getElementById('saDate').value=s.date;
+  document.getElementById('saStock').value='';document.getElementById('saUnits').value=s.units;
+  document.getElementById('saPrice').value=s.price;document.getElementById('saAmount').value=s.amount;
+  document.getElementById('saPaid').value=s.paid||'paid';
+  document.getElementById('salesModal').classList.add('open');
+}
+function saveSale(){
+  const id=document.getElementById('editSaleId').value;
+  const custId=document.getElementById('saCustomer').value;
+  const cust=DB.customers.find(c=>c.custId===custId);
+  const hsn=document.getElementById('saHSN').value;
+  const units=Number(document.getElementById('saUnits').value);
+  if(!custId||!hsn||!units){showToast('Fill all fields','err');return;}
+  if(!id){const inv=getInvMap();if(inv[hsn]&&units>inv[hsn].stock){showToast(`Only ${inv[hsn].stock} units in stock!`,'err');return;}}
+  const o={custId,customer:cust?cust.name:'Unknown',hsn,product:document.getElementById('saProduct').value,
+    date:document.getElementById('saDate').value,units,price:Number(document.getElementById('saPrice').value),
+    amount:Number(document.getElementById('saAmount').value),paid:document.getElementById('saPaid').value};
+  if(id){const i=DB.sales.findIndex(s=>s.id===id);DB.sales[i]={...DB.sales[i],...o};}
+  else{
+    DB.sales.push({id:uid(),...o});
+    if(o.paid==='paid') DB.cash.push({id:uid(),type:'in',category:'Sales',date:o.date,amount:o.amount,note:`Sale: ${o.product} to ${o.customer}`});
+  }
+  saveDB();closeModal('salesModal');renderSales();showToast('Sale saved');
+}
+function delSale(id){confirmDelete('Delete this sale entry?',()=>{DB.sales=DB.sales.filter(s=>s.id!==id);saveDB();renderSales();showToast('Deleted');});}
+
+// ─── SERVICE REVENUE CRUD ────────────────────
+function renderService(q=''){
+  const list=[...(DB.serviceRevenue||[])].filter(s=>!q||s.name.toLowerCase().includes(q.toLowerCase()))
+    .sort((a,b)=>b.date.localeCompare(a.date));
+  const total=list.reduce((a,b)=>a+Number(b.amount),0);
+  document.getElementById('serviceTable').innerHTML=(list.length
+    ?list.map((s,i)=>`<tr>
+        <td><span class="pill pill-teal">SV${String(i+1).padStart(3,'0')}</span></td>
+        <td>${s.date}</td><td><b>${s.name}</b></td><td>${s.description||'—'}</td>
+        <td><b>৳${fmt(s.amount)}</b></td>
+        <td><div class="act-btns">
+          <button class="btn btn-blue btn-sm" onclick='editService(${JSON.stringify(s)})'>✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="delService('${s.id}')">🗑️</button>
+        </div></td></tr>`).join('')
+    :'<tr class="empty-row"><td colspan="6">No service revenue yet</td></tr>')
+    +(list.length?`<tr class="tfoot-row"><td colspan="4"><b>Total Service Revenue</b></td><td colspan="2"><b>৳${fmt(total)}</b></td></tr>`:'');
+}
+function editService(s){
+  document.getElementById('serviceModalTitle').textContent='Edit Service Revenue';
+  document.getElementById('editServiceId').value=s.id;
+  document.getElementById('svcName').value=s.name;document.getElementById('svcDate').value=s.date;
+  document.getElementById('svcDesc').value=s.description||'';document.getElementById('svcAmount').value=s.amount;
+  document.getElementById('serviceModal').classList.add('open');
+}
+function saveService(){
+  const id=document.getElementById('editServiceId').value;
+  const o={name:document.getElementById('svcName').value.trim(),date:document.getElementById('svcDate').value,
+    description:document.getElementById('svcDesc').value.trim(),amount:Number(document.getElementById('svcAmount').value)};
+  if(!o.name||!o.amount||!o.date){showToast('Fill all fields','err');return;}
+  if(id){const i=DB.serviceRevenue.findIndex(s=>s.id===id);DB.serviceRevenue[i]={...DB.serviceRevenue[i],...o};}
+  else{
+    DB.serviceRevenue.push({id:uid(),...o});
+    DB.cash.push({id:uid(),type:'in',category:'Service Revenue',date:o.date,amount:o.amount,note:o.name});
+  }
+  saveDB();closeModal('serviceModal');renderService();showToast('Service revenue saved');
+}
+function delService(id){confirmDelete('Delete this service entry?',()=>{DB.serviceRevenue=DB.serviceRevenue.filter(s=>s.id!==id);saveDB();renderService();showToast('Deleted');});}
+
+// ─── OPEX CRUD ───────────────────────────────
+function renderOpex(q=''){
+  const list=[...(DB.opExpenses||[])].filter(e=>!q||(e.name+e.category).toLowerCase().includes(q.toLowerCase()))
+    .sort((a,b)=>b.date.localeCompare(a.date));
+  const total=list.reduce((a,b)=>a+Number(b.amount),0);
+  const catColor={Rent:'pill-purple','Salary Expense':'pill-blue','Utility Expense':'pill-teal',Other:'pill-gray'};
+  document.getElementById('opexTable').innerHTML=(list.length
+    ?list.map((e,i)=>`<tr>
+        <td><span class="pill pill-purple">EX${String(i+1).padStart(3,'0')}</span></td>
+        <td>${e.date}</td><td><b>${e.name}</b></td>
+        <td><span class="pill ${catColor[e.category]||'pill-gray'}">${e.category}</span></td>
+        <td><b>৳${fmt(e.amount)}</b></td>
+        <td><div class="act-btns">
+          <button class="btn btn-blue btn-sm" onclick='editOpex(${JSON.stringify(e)})'>✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="delOpex('${e.id}')">🗑️</button>
+        </div></td></tr>`).join('')
+    :'<tr class="empty-row"><td colspan="6">No expenses yet</td></tr>')
+    +(list.length?`<tr class="tfoot-row"><td colspan="4"><b>Total Operating Expenses</b></td><td colspan="2"><b>৳${fmt(total)}</b></td></tr>`:'');
+}
+function editOpex(e){
+  document.getElementById('opexModalTitle').textContent='Edit Expense';
+  document.getElementById('editOpexId').value=e.id;
+  document.getElementById('opName').value=e.name;document.getElementById('opDate').value=e.date;
+  document.getElementById('opCategory').value=e.category;document.getElementById('opAmount').value=e.amount;
+  document.getElementById('opexModal').classList.add('open');
+}
+function saveOpex(){
+  const id=document.getElementById('editOpexId').value;
+  const o={name:document.getElementById('opName').value.trim(),date:document.getElementById('opDate').value,
+    category:document.getElementById('opCategory').value,amount:Number(document.getElementById('opAmount').value)};
+  if(!o.name||!o.amount||!o.date){showToast('Fill all fields','err');return;}
+  if(id){const i=DB.opExpenses.findIndex(e=>e.id===id);DB.opExpenses[i]={...DB.opExpenses[i],...o};}
+  else{
+    DB.opExpenses.push({id:uid(),...o});
+    DB.cash.push({id:uid(),type:'out',category:o.category,date:o.date,amount:o.amount,note:o.name});
+  }
+  saveDB();closeModal('opexModal');renderOpex();showToast('Expense saved');
+}
+function delOpex(id){confirmDelete('Delete this expense?',()=>{DB.opExpenses=DB.opExpenses.filter(e=>e.id!==id);saveDB();renderOpex();showToast('Deleted');});}
+
+// Check hash on load to open correct tab
+(async()=>{
+  if(!requireAuth()) return;
+  await loadDB();
+  buildSidebar('transactions');
+  renderPurchase();renderSales();renderService();renderOpex();
+  if(location.hash==='#service'){
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    document.querySelector('[onclick*="service"]').classList.add('active');
+    document.getElementById('tab-service').classList.add('active');
+  } else if(location.hash==='#opex'){
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    document.querySelector('[onclick*="opex"]').classList.add('active');
+    document.getElementById('tab-opex').classList.add('active');
+  }
+})();
+</script>
+</body>
+</html>

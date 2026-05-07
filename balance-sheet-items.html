@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Balance Sheet Items — Students Point</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<div class="main">
+  <div class="pg-header">
+    <div class="pg-title">Balance Sheet Items</div>
+    <div class="pg-sub">Manage assets, liabilities and equity — these populate the Balance Sheet report</div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('assets',this)">🏦 Assets</button>
+    <button class="tab-btn" onclick="switchTab('liabilities',this)">📋 Liabilities</button>
+    <button class="tab-btn" onclick="switchTab('equity',this)">💼 Equity</button>
+  </div>
+
+  <!-- ASSETS -->
+  <div class="tab-panel active" id="tab-assets">
+    <div class="info-box">🏦 <b>Assets</b> — Things your business owns (cash, computers, furniture, equipment). Balances here will appear on the Balance Sheet.</div>
+    <div class="cards-grid cards-3" id="assetCards"></div>
+    <div class="toolbar">
+      <span style="font-size:13px;color:var(--text2)">Items auto-include: Cash on Hand, Accounts Receivable, Stock Value</span>
+      <button class="btn btn-primary" onclick="openItemModal('asset')">＋ Add Asset</button>
+    </div>
+    <div class="tbox"><table>
+      <thead><tr><th>Asset ID</th><th>Name of Asset</th><th>Balance (৳)</th><th>Actions</th></tr></thead>
+      <tbody id="assetsTable"></tbody>
+    </table></div>
+  </div>
+
+  <!-- LIABILITIES -->
+  <div class="tab-panel" id="tab-liabilities">
+    <div class="info-box">📋 <b>Liabilities</b> — What your business owes (rent payable, loans etc.). Balances appear on the Balance Sheet.</div>
+    <div class="cards-grid cards-3" id="liabilityCards"></div>
+    <div class="toolbar">
+      <span style="font-size:13px;color:var(--text2)">Items auto-include: Accounts Payable</span>
+      <button class="btn btn-primary" onclick="openItemModal('liability')">＋ Add Liability</button>
+    </div>
+    <div class="tbox"><table>
+      <thead><tr><th>Liability ID</th><th>Name of Liability</th><th>Balance (৳)</th><th>Actions</th></tr></thead>
+      <tbody id="liabilitiesTable"></tbody>
+    </table></div>
+  </div>
+
+  <!-- EQUITY -->
+  <div class="tab-panel" id="tab-equity">
+    <div class="info-box">💼 <b>Equity</b> — Owner's capital and retained earnings. Total Equity = Total Assets − Total Liabilities.</div>
+    <div class="cards-grid cards-3" id="equityCards"></div>
+    <div class="toolbar">
+      <span style="font-size:13px;color:var(--text2)">Net Income is auto-included from Income Statement</span>
+      <button class="btn btn-primary" onclick="openItemModal('equity')">＋ Add Equity Item</button>
+    </div>
+    <div class="tbox"><table>
+      <thead><tr><th>Equity ID</th><th>Name</th><th>Balance (৳)</th><th>Actions</th></tr></thead>
+      <tbody id="equityTable"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ITEM MODAL -->
+<div class="modal-overlay" id="itemModal">
+  <div class="modal">
+    <div class="modal-title" id="itemModalTitle">Add Asset</div>
+    <div class="modal-sub" id="itemModalSub">Fill in the details</div>
+    <input type="hidden" id="editItemId">
+    <input type="hidden" id="editItemType">
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl" id="itemIdLabel">Asset ID</label><input class="form-input" id="itemCode" placeholder="e.g. A001"></div>
+      <div class="form-row"><label class="form-lbl" id="itemNameLabel">Name</label><input class="form-input" id="itemName" placeholder="e.g. Computer"></div>
+    </div>
+    <div class="form-row"><label class="form-lbl">Balance (৳)</label><input class="form-input" id="itemBalance" type="number" min="0" placeholder="0"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('itemModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal confirm-modal">
+    <div class="confirm-icon">🗑️</div>
+    <div class="modal-title">Delete?</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+<div class="toast hidden" id="toast"><span id="toastIcon">✅</span> <span id="toastMsg"></span></div>
+<script src="firebase-config.js"></script>
+<script src="db.js"></script>
+<script src="sidebar.js"></script>
+<script>
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  btn.classList.add('active');
+}
+
+function openItemModal(type, item=null){
+  document.getElementById('editItemType').value=type;
+  document.getElementById('editItemId').value=item?item.id:'';
+  const labels={asset:['Asset ID','Name of Asset'],liability:['Liability ID','Name of Liability'],equity:['Equity ID','Name of Equity']};
+  const titles={asset:'Asset',liability:'Liability',equity:'Equity Item'};
+  document.getElementById('itemModalTitle').textContent=(item?'Edit ':'Add ')+titles[type];
+  document.getElementById('itemModalSub').textContent='Fill in the '+titles[type].toLowerCase()+' details';
+  document.getElementById('itemIdLabel').textContent=labels[type][0];
+  document.getElementById('itemNameLabel').textContent=labels[type][1];
+  const codeField={asset:'assetId',liability:'liabilityId',equity:'equityId'};
+  document.getElementById('itemCode').value=item?item[codeField[type]]:'';
+  document.getElementById('itemName').value=item?item.name:'';
+  document.getElementById('itemBalance').value=item?item.balance:'';
+  document.getElementById('itemModal').classList.add('open');
+}
+
+function saveItem(){
+  const type=document.getElementById('editItemType').value;
+  const id=document.getElementById('editItemId').value;
+  const codeField={asset:'assetId',liability:'liabilityId',equity:'equityId'};
+  const arr={asset:DB.assets,liability:DB.liabilities,equity:DB.equity};
+  const o={[codeField[type]]:document.getElementById('itemCode').value.trim(),
+    name:document.getElementById('itemName').value.trim(),
+    balance:Number(document.getElementById('itemBalance').value)};
+  if(!o.name||!o[codeField[type]]){showToast('Fill all fields','err');return;}
+  if(id){const i=arr[type].findIndex(x=>x.id===id);arr[type][i]={...arr[type][i],...o};}
+  else arr[type].push({id:uid(),...o});
+  saveDB();closeModal('itemModal');renderAll();showToast('Saved');
+}
+
+function renderAssets(){
+  const cash=getCashSummary();
+  const ar=getARSummary();
+  const inv=getInvMap();
+  const arNet=Object.values(ar).reduce((a,b)=>a+b.netBalance,0);
+  const stockVal=Object.values(inv).reduce((a,b)=>a+b.stockAmt,0);
+  const manual=DB.assets||[];
+  const manualTotal=manual.reduce((a,b)=>a+Number(b.balance),0);
+  const total=cash.onHand+arNet+stockVal+manualTotal;
+  document.getElementById('assetCards').innerHTML=`
+    <div class="card bl-teal"><div class="card-lbl">Auto: Cash on Hand</div><div class="card-val teal">৳${fmt(cash.onHand)}</div><div class="card-sub">From Cash Book</div></div>
+    <div class="card bl-blue"><div class="card-lbl">Auto: Accounts Receivable</div><div class="card-val blue">৳${fmt(arNet)}</div><div class="card-sub">Net outstanding from customers</div></div>
+    <div class="card bl-green"><div class="card-lbl">Total Assets</div><div class="card-val green">৳${fmt(total)}</div><div class="card-sub">Auto + Manual items</div></div>`;
+  document.getElementById('assetsTable').innerHTML=
+    `<tr style="background:#f0fdf4"><td colspan="3" style="padding:10px 14px;font-size:12px;color:var(--success)">
+      <b>Auto-included:</b> Cash on Hand ৳${fmt(cash.onHand)} · AR ৳${fmt(arNet)} · Stock ৳${fmt(stockVal)}</td><td></td></tr>`
+    +(manual.length?manual.map(a=>`<tr>
+        <td><span class="pill pill-blue">${a.assetId}</span></td>
+        <td><b>${a.name}</b></td><td>৳${fmt(a.balance)}</td>
+        <td><div class="act-btns">
+          <button class="btn btn-blue btn-sm" onclick='openItemModal("asset",${JSON.stringify(a)})'>✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="delItem('asset','${a.id}')">🗑️</button>
+        </div></td></tr>`).join('')
+      :'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">No manual assets added yet</td></tr>')
+    +`<tr class="tfoot-row"><td colspan="2"><b>Total Assets (incl. auto)</b></td><td><b>৳${fmt(total)}</b></td><td></td></tr>`;
+}
+
+function renderLiabilities(){
+  const ap=getAPSummary();
+  const apNet=Object.values(ap).reduce((a,b)=>a+b.netBalance,0);
+  const manual=DB.liabilities||[];
+  const manualTotal=manual.reduce((a,b)=>a+Number(b.balance),0);
+  const total=apNet+manualTotal;
+  document.getElementById('liabilityCards').innerHTML=`
+    <div class="card bl-red"><div class="card-lbl">Auto: Accounts Payable</div><div class="card-val red">৳${fmt(apNet)}</div><div class="card-sub">Net owed to vendors</div></div>
+    <div class="card bl-purple"><div class="card-lbl">Manual Liabilities</div><div class="card-val purple">৳${fmt(manualTotal)}</div><div class="card-sub">Rent payable, loans etc.</div></div>
+    <div class="card bl-red"><div class="card-lbl">Total Liabilities</div><div class="card-val red">৳${fmt(total)}</div><div class="card-sub">Auto + Manual</div></div>`;
+  document.getElementById('liabilitiesTable').innerHTML=
+    `<tr style="background:#fff1f2"><td colspan="3" style="padding:10px 14px;font-size:12px;color:var(--danger)">
+      <b>Auto-included:</b> Accounts Payable ৳${fmt(apNet)}</td><td></td></tr>`
+    +(manual.length?manual.map(l=>`<tr>
+        <td><span class="pill pill-red">${l.liabilityId}</span></td>
+        <td><b>${l.name}</b></td><td>৳${fmt(l.balance)}</td>
+        <td><div class="act-btns">
+          <button class="btn btn-blue btn-sm" onclick='openItemModal("liability",${JSON.stringify(l)})'>✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="delItem('liability','${l.id}')">🗑️</button>
+        </div></td></tr>`).join('')
+      :'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">No manual liabilities added yet</td></tr>')
+    +`<tr class="tfoot-row"><td colspan="2"><b>Total Liabilities (incl. auto)</b></td><td><b>৳${fmt(total)}</b></td><td></td></tr>`;
+}
+
+function renderEquity(){
+  const totSa=(DB.sales||[]).reduce((a,b)=>a+Number(b.amount),0);
+  const totSvc=(DB.serviceRevenue||[]).reduce((a,b)=>a+Number(b.amount),0);
+  const totPu=(DB.purchases||[]).reduce((a,b)=>a+Number(b.amount),0);
+  const totExp=(DB.opExpenses||[]).reduce((a,b)=>a+Number(b.amount),0);
+  const netIncome=(totSa+totSvc)-(totPu+totExp);
+  const manual=DB.equity||[];
+  const manualTotal=manual.reduce((a,b)=>a+Number(b.balance),0);
+  const total=netIncome+manualTotal;
+  document.getElementById('equityCards').innerHTML=`
+    <div class="card bl-${netIncome>=0?'green':'red'}"><div class="card-lbl">Auto: Net Income</div><div class="card-val ${netIncome>=0?'green':'red'}">৳${fmt(netIncome)}</div><div class="card-sub">From Income Statement</div></div>
+    <div class="card bl-purple"><div class="card-lbl">Manual Equity</div><div class="card-val purple">৳${fmt(manualTotal)}</div><div class="card-sub">Owner's capital etc.</div></div>
+    <div class="card bl-green"><div class="card-lbl">Total Equity</div><div class="card-val green">৳${fmt(total)}</div><div class="card-sub">Auto + Manual</div></div>`;
+  document.getElementById('equityTable').innerHTML=
+    `<tr style="background:#f0fdf4"><td colspan="3" style="padding:10px 14px;font-size:12px;color:var(--success)">
+      <b>Auto-included:</b> Net Income ৳${fmt(netIncome)}</td><td></td></tr>`
+    +(manual.length?manual.map(e=>`<tr>
+        <td><span class="pill pill-purple">${e.equityId}</span></td>
+        <td><b>${e.name}</b></td><td>৳${fmt(e.balance)}</td>
+        <td><div class="act-btns">
+          <button class="btn btn-blue btn-sm" onclick='openItemModal("equity",${JSON.stringify(e)})'>✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="delItem('equity','${e.id}')">🗑️</button>
+        </div></td></tr>`).join('')
+      :'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">No manual equity items added yet</td></tr>')
+    +`<tr class="tfoot-row"><td colspan="2"><b>Total Equity (incl. auto)</b></td><td><b>৳${fmt(total)}</b></td><td></td></tr>`;
+}
+
+function delItem(type,id){
+  const arr={asset:DB.assets,liability:DB.liabilities,equity:DB.equity};
+  confirmDelete('Delete this item?',()=>{arr[type]=arr[type].filter(x=>x.id!==id);DB[type+'s']=arr[type];saveDB();renderAll();showToast('Deleted');});
+}
+function renderAll(){ renderAssets(); renderLiabilities(); renderEquity(); }
+
+(async()=>{
+  if(!requireAuth()) return;
+  await loadDB();
+  buildSidebar('bsitems');
+  renderAll();
+})();
+</script>
+</body>
+</html>

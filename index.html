@@ -3,540 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>InvenTrack — Inventory Management</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<title>Students Point — Login</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="loginScreen">
+<div class="login-wrap">
   <div class="login-box">
-    <div class="login-logo">Inven<span>Track</span></div>
-    <div class="login-sub">Inventory Management System — Staff Login</div>
+    <div class="login-logo">Students Point</div>
+    <div class="login-sub">Accounting & Inventory Management System</div>
     <label class="lbl">Username</label>
     <input class="linput" id="loginUser" type="text" placeholder="Enter username" autocomplete="off">
     <label class="lbl">Password</label>
     <input class="linput" id="loginPass" type="password" placeholder="Enter password">
     <button class="lbtn" onclick="doLogin()">Sign In →</button>
     <div class="lerr" id="loginErr"></div>
-    <div class="lhint">Default accounts<br>
-      <b>admin</b> / admin123 &nbsp;·&nbsp; <b>manager</b> / manager123 &nbsp;·&nbsp; <b>staff</b> / staff123
-    </div>
-  </div>
-</div>
-
-<!-- APP -->
-<div id="appShell">
-
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="s-logo">
-      <div class="s-logo-text">Inven<span>Track</span></div>
-      <div class="s-user">Signed in as <b id="sidebarUser">—</b></div>
-    </div>
-
-    <!-- SIGN OUT — prominent, always visible -->
-    <div class="signout-bar">
-      <button class="signout-btn" onclick="doLogout()">🚪 Sign Out</button>
-    </div>
-
-    <div class="nav">
-      <div class="nav-sec">Overview</div>
-      <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="ni">📊</span>Dashboard</div>
-
-      <div class="nav-sec">Records</div>
-      <div class="nav-item" onclick="showPage('products',this)"><span class="ni">📦</span>Products</div>
-      <div class="nav-item" onclick="showPage('vendors',this)"><span class="ni">🏭</span>Vendors</div>
-      <div class="nav-item" onclick="showPage('customers',this)"><span class="ni">👥</span>Customers</div>
-
-      <div class="nav-sec">Transactions</div>
-      <div class="nav-item" onclick="showPage('purchase',this)"><span class="ni">🛒</span>Purchase Entry</div>
-      <div class="nav-item" onclick="showPage('sales',this)"><span class="ni">💰</span>Sales Entry</div>
-
-      <div class="nav-sec">Stock</div>
-      <div class="nav-item" onclick="showPage('inventory',this)"><span class="ni">🗄️</span>Inventory</div>
-
-      <div class="nav-sec">Finance</div>
-      <div class="nav-item" onclick="showPage('ledger',this)"><span class="ni">⚖️</span>Balance Ledger</div>
-      <div class="nav-item" onclick="showPage('cash',this)"><span class="ni">💵</span>Cash Book</div>
-      <div class="nav-item" onclick="showPage('statement',this)"><span class="ni">📋</span>Statement</div>
-
-      <div class="nav-sec">Admin</div>
-      <div class="nav-item" id="usersNav" onclick="showPage('users',this)"><span class="ni">🔐</span>Manage Users</div>
-    </div>
-
-    <div class="s-footer">
-      <div style="padding:6px 12px 8px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">
-        <span class="sync-dot" id="syncDot"></span><span id="syncStatus">Connected</span>
-      </div>
-      <button class="footer-btn" onclick="exportExcel()">📥 Export to Excel</button>
-      <button class="footer-btn" onclick="backupData()">💾 Backup Data</button>
-      <label class="footer-btn" style="cursor:pointer">📂 Restore Backup<input type="file" accept=".json" style="display:none" onchange="restoreData(event)"></label>
-      <button class="footer-btn" onclick="window.print()">🖨️ Print</button>
-    </div>
-  </div>
-
-  <!-- MAIN -->
-  <div class="main">
-
-    <!-- ═══ DASHBOARD ═══ -->
-    <div class="page active" id="page-dashboard">
-      <div class="pg-title">Dashboard</div>
-      <div class="pg-sub" id="dashDate"></div>
-      <div class="cards-5" id="dashCards"></div>
-      <div class="alert-box" id="dashAlerts"></div>
-      <div class="balance-chart-wrap">
-        <div class="balance-chart-title">⚖️ Balance Overview — Active Entries by Party
-          <span style="margin-left:auto;font-size:11px;font-weight:400;color:var(--text2)">
-            <span style="display:inline-block;width:10px;height:10px;background:var(--danger);border-radius:2px;margin-right:4px"></span>I Owe &nbsp;
-            <span style="display:inline-block;width:10px;height:10px;background:var(--success);border-radius:2px;margin-right:4px"></span>They Owe Me
-          </span>
-        </div>
-        <div id="balanceChart"></div>
-      </div>
-      <div class="grid2">
-        <div class="tbox">
-          <div class="tbox-hdr"><span class="tbox-title">🏆 Top Customers by Sales</span></div>
-          <table><thead><tr><th>Customer</th><th>Total (৳)</th></tr></thead><tbody id="topCustTable"></tbody></table>
-        </div>
-        <div class="tbox">
-          <div class="tbox-hdr"><span class="tbox-title">🔥 Top Products by Units Sold</span></div>
-          <table><thead><tr><th>Product</th><th>Units Sold</th></tr></thead><tbody id="topProdTable"></tbody></table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══ PRODUCTS ═══ -->
-    <div class="page" id="page-products">
-      <div class="pg-title">Products</div>
-      <div class="pg-sub">Manage your product catalog</div>
-      <div class="toolbar">
-        <input class="search-input" placeholder="🔍  Search products…" oninput="renderProducts(this.value)">
-        <button class="btn btn-accent" onclick="openModal('productModal')">＋ Add Product</button>
-      </div>
-      <div class="tbox">
-        <table><thead><tr><th>HSN Code</th><th>Product Name</th><th>Cost (৳)</th><th>Selling Price (৳)</th><th>Actions</th></tr></thead>
-        <tbody id="productsTable"></tbody></table>
-      </div>
-    </div>
-
-    <!-- ═══ VENDORS ═══ -->
-    <div class="page" id="page-vendors">
-      <div class="pg-title">Vendors</div>
-      <div class="pg-sub">Manage your supplier information</div>
-      <div class="toolbar">
-        <input class="search-input" placeholder="🔍  Search vendors…" oninput="renderVendors(this.value)">
-        <button class="btn btn-accent" onclick="openModal('vendorModal')">＋ Add Vendor</button>
-      </div>
-      <div class="tbox">
-        <table><thead><tr><th>HSN Code</th><th>Product</th><th>Vendor Name</th><th>Phone</th><th>Address</th><th>Actions</th></tr></thead>
-        <tbody id="vendorsTable"></tbody></table>
-      </div>
-    </div>
-
-    <!-- ═══ CUSTOMERS ═══ -->
-    <div class="page" id="page-customers">
-      <div class="pg-title">Customers</div>
-      <div class="pg-sub">Manage your buyer information</div>
-      <div class="toolbar">
-        <input class="search-input" placeholder="🔍  Search customers…" oninput="renderCustomers(this.value)">
-        <button class="btn btn-accent" onclick="openModal('customerModal')">＋ Add Customer</button>
-      </div>
-      <div class="tbox">
-        <table><thead><tr><th>Cust ID</th><th>Name</th><th>Email</th><th>Address</th><th>Actions</th></tr></thead>
-        <tbody id="customersTable"></tbody></table>
-      </div>
-    </div>
-
-    <!-- ═══ PURCHASE ═══ -->
-    <div class="page" id="page-purchase">
-      <div class="pg-title">Purchase Entry</div>
-      <div class="pg-sub">Record stock received from vendors</div>
-      <div class="toolbar">
-        <input class="search-input" placeholder="🔍  Search purchases…" oninput="renderPurchase(this.value)">
-        <button class="btn btn-accent" onclick="openModal('purchaseModal')">＋ New Purchase</button>
-      </div>
-      <div class="tbox">
-        <table><thead><tr><th>HSN</th><th>Product</th><th>Vendor</th><th>Date</th><th>Units</th><th>Cost (৳)</th><th>Amount (৳)</th><th>Paid?</th><th>Actions</th></tr></thead>
-        <tbody id="purchaseTable"></tbody></table>
-      </div>
-    </div>
-
-    <!-- ═══ SALES ═══ -->
-    <div class="page" id="page-sales">
-      <div class="pg-title">Sales Entry</div>
-      <div class="pg-sub">Record stock sold to customers</div>
-      <div class="toolbar">
-        <input class="search-input" placeholder="🔍  Search sales…" oninput="renderSales(this.value)">
-        <button class="btn btn-accent" onclick="openModal('salesModal')">＋ New Sale</button>
-      </div>
-      <div class="tbox">
-        <table><thead><tr><th>Customer</th><th>HSN</th><th>Product</th><th>Date</th><th>Units</th><th>Price (৳)</th><th>Amount (৳)</th><th>Paid?</th><th>Actions</th></tr></thead>
-        <tbody id="salesTable"></tbody></table>
-      </div>
-    </div>
-
-    <!-- ═══ INVENTORY ═══ -->
-    <div class="page" id="page-inventory">
-      <div class="pg-title">Inventory</div>
-      <div class="pg-sub">Live stock levels — auto-calculated from all transactions</div>
-      <div class="tbox">
-        <table><thead><tr><th>HSN Code</th><th>Product Name</th><th>Cost (৳)</th><th>Purchased</th><th>Taken (Credit)</th><th>Sold</th><th>Given (Credit)</th><th>Stock</th><th>Stock Value (৳)</th><th>Status</th></tr></thead>
-        <tbody id="inventoryTable"></tbody></table>
-      </div>
-    </div>
-
-    <!-- ═══ BALANCE LEDGER ═══ -->
-    <div class="page" id="page-ledger">
-      <div class="pg-title">Balance Ledger</div>
-      <div class="pg-sub">Track inter-store credit — goods exchanged without immediate payment</div>
-      <div class="cards-3" id="ledgerSummary"></div>
-      <div class="info-box">
-        <b style="color:var(--accent)">⚖️ How Balance Ledger works:</b><br>
-        <b style="color:var(--danger)">↑ I Took (I Owe)</b> — Your store took goods from a nearby shop in emergency. They owe stock back or you pay later. <b>Adds to your payable balance.</b><br>
-        <b style="color:var(--success)">↓ I Gave (They Owe)</b> — Another shop needed goods from you. They will return or pay later. <b>Adds to your receivable balance.</b><br>
-        Mark as <b>Settled</b> once returned/paid. Only pending entries affect Net Balance &amp; stock.
-      </div>
-      <div class="toolbar">
-        <input class="search-input" placeholder="🔍  Search by party or note…" oninput="renderLedger(this.value)">
-        <button class="btn btn-accent" onclick="openModal('ledgerModal')">＋ New Entry</button>
-      </div>
-      <div class="tbox">
-        <table><thead><tr><th>Date</th><th>Party</th><th>Product</th><th>Units</th><th>Type</th><th>Amount (৳)</th><th>Note</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody id="ledgerTable"></tbody></table>
-      </div>
-    </div>
-
-    <!-- ═══ CASH BOOK ═══ -->
-    <div class="page" id="page-cash">
-      <div class="pg-title">Cash Book</div>
-      <div class="pg-sub">Track all cash coming in and going out of your shop</div>
-      <div class="cards-3" id="cashSummary"></div>
-      <div class="info-box">
-        <b style="color:var(--accent)">💵 How Cash Book works:</b><br>
-        <b style="color:var(--success)">Cash In</b> — Money received: sales payments, ledger settlements received, any other income.<br>
-        <b style="color:var(--danger)">Cash Out</b> — Money paid: purchase payments, ledger settlements paid, expenses, rent etc.<br>
-        <b>Cash on Hand</b> = Total Cash In − Total Cash Out. This is your actual physical cash balance.
-      </div>
-      <div class="toolbar">
-        <input class="search-input" placeholder="🔍  Search cash entries…" oninput="renderCash(this.value)">
-        <button class="btn btn-accent" onclick="openModal('cashModal')">＋ New Cash Entry</button>
-      </div>
-      <div class="tbox">
-        <table><thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Amount (৳)</th><th>Note</th><th>Actions</th></tr></thead>
-        <tbody id="cashTable"></tbody></table>
-      </div>
-    </div>
-
-    <!-- ═══ STATEMENT ═══ -->
-    <div class="page" id="page-statement">
-      <div class="pg-title">Statement</div>
-      <div class="pg-sub">Custom period financial report — purchases, sales, ledger, cash &amp; profit</div>
-
-      <!-- Filter bar -->
-      <div class="stmt-filter-bar">
-        <label>Quick Select:</label>
-        <button class="stmt-quick-btn" onclick="stmtQuick(1,this)">Today</button>
-        <button class="stmt-quick-btn" onclick="stmtQuick(7,this)">7 Days</button>
-        <button class="stmt-quick-btn active" onclick="stmtQuick(30,this)">1 Month</button>
-        <button class="stmt-quick-btn" onclick="stmtQuick(365,this)">1 Year</button>
-        <button class="stmt-quick-btn" onclick="stmtQuick(0,this)">All Time</button>
-        <span style="color:var(--text3);padding:0 4px">|</span>
-        <label>From:</label>
-        <input class="form-input" id="stmtFrom" type="date" style="width:140px;padding:7px 10px">
-        <label>To:</label>
-        <input class="form-input" id="stmtTo"   type="date" style="width:140px;padding:7px 10px">
-        <button class="btn btn-accent btn-sm" onclick="renderStatement()">Generate</button>
-        <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ Print</button>
-      </div>
-
-      <!-- Statement output -->
-      <div id="stmtOutput"></div>
-    </div>
-
-    <!-- ═══ USERS ═══ -->
-    <div class="page" id="page-users">
-      <div class="pg-title">Manage Users</div>
-      <div class="pg-sub">Add or remove staff accounts — Admin only</div>
-      <div class="toolbar">
-        <span style="font-size:13px;color:var(--text2)">Only <b style="color:var(--accent)">admin</b> role can manage users</span>
-        <button class="btn btn-accent" onclick="openModal('userModal')">＋ Add User</button>
-      </div>
-      <div id="usersList"></div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ═══════════ MODALS ═══════════ -->
-
-<!-- PRODUCT -->
-<div class="modal-overlay" id="productModal">
-  <div class="modal">
-    <div class="modal-title" id="productModalTitle">Add Product</div>
-    <div class="modal-sub">Fill in the product details below</div>
-    <input type="hidden" id="editProductId">
-    <div class="form-row"><label class="form-lbl">HSN Code</label><input class="form-input" id="pHSN" placeholder="e.g. N1001"></div>
-    <div class="form-row"><label class="form-lbl">Product Name</label><input class="form-input" id="pName" placeholder="e.g. Smart Watch"></div>
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Cost Price (৳)</label><input class="form-input" id="pCost" type="number" placeholder="0"></div>
-      <div class="form-row"><label class="form-lbl">Selling Price (৳)</label><input class="form-input" id="pPrice" type="number" placeholder="0"></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('productModal')">Cancel</button>
-      <button class="btn btn-accent" onclick="saveProduct()">Save Product</button>
-    </div>
-  </div>
-</div>
-
-<!-- VENDOR -->
-<div class="modal-overlay" id="vendorModal">
-  <div class="modal">
-    <div class="modal-title" id="vendorModalTitle">Add Vendor</div>
-    <div class="modal-sub">Fill in the supplier details</div>
-    <input type="hidden" id="editVendorId">
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">HSN Code</label>
-        <select class="form-select" id="vHSN" onchange="autoFillVendorProduct()"><option value="">Select HSN</option></select></div>
-      <div class="form-row"><label class="form-lbl">Product Name</label><input class="form-input" id="vProduct" readonly placeholder="Auto-filled"></div>
-    </div>
-    <div class="form-row"><label class="form-lbl">Vendor Name</label><input class="form-input" id="vName" placeholder="e.g. Tech Supplies Ltd."></div>
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Phone</label><input class="form-input" id="vPhone" placeholder="01xxxxxxxxx"></div>
-      <div class="form-row"><label class="form-lbl">Address</label><input class="form-input" id="vAddress" placeholder="City, Area"></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('vendorModal')">Cancel</button>
-      <button class="btn btn-accent" onclick="saveVendor()">Save Vendor</button>
-    </div>
-  </div>
-</div>
-
-<!-- CUSTOMER -->
-<div class="modal-overlay" id="customerModal">
-  <div class="modal">
-    <div class="modal-title" id="customerModalTitle">Add Customer</div>
-    <div class="modal-sub">Fill in the customer details</div>
-    <input type="hidden" id="editCustomerId">
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Customer ID</label><input class="form-input" id="cId" placeholder="e.g. 100"></div>
-      <div class="form-row"><label class="form-lbl">Full Name</label><input class="form-input" id="cName" placeholder="Name or company"></div>
-    </div>
-    <div class="form-row"><label class="form-lbl">Email</label><input class="form-input" id="cEmail" type="email" placeholder="email@example.com"></div>
-    <div class="form-row"><label class="form-lbl">Address</label><input class="form-input" id="cAddress" placeholder="City, Area, Postcode"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('customerModal')">Cancel</button>
-      <button class="btn btn-accent" onclick="saveCustomer()">Save Customer</button>
-    </div>
-  </div>
-</div>
-
-<!-- PURCHASE -->
-<div class="modal-overlay" id="purchaseModal">
-  <div class="modal">
-    <div class="modal-title" id="purchaseModalTitle">New Purchase Entry</div>
-    <div class="modal-sub">Record stock received from a vendor</div>
-    <input type="hidden" id="editPurchaseId">
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">HSN Code</label>
-        <select class="form-select" id="puHSN" onchange="autoFillPurchase()"><option value="">Select HSN</option></select></div>
-      <div class="form-row"><label class="form-lbl">Product Name</label><input class="form-input" id="puProduct" readonly placeholder="Auto-filled"></div>
-    </div>
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Vendor</label><input class="form-input" id="puVendor" readonly placeholder="Auto-filled"></div>
-      <div class="form-row"><label class="form-lbl">Date</label><input class="form-input" id="puDate" type="date"></div>
-    </div>
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Units</label><input class="form-input" id="puUnits" type="number" min="1" placeholder="0" oninput="calcPurchaseAmt()"></div>
-      <div class="form-row"><label class="form-lbl">Cost / Unit (৳)</label><input class="form-input" id="puCost" readonly placeholder="Auto-filled"></div>
-    </div>
-    <div class="form-row"><label class="form-lbl">Total Amount (৳)</label><input class="form-input" id="puAmount" readonly placeholder="Auto-calculated"></div>
-    <div class="form-row">
-      <label class="form-lbl">Payment Status</label>
-      <select class="form-select" id="puPaid">
-        <option value="paid">Paid (cash out recorded)</option>
-        <option value="credit">On Credit (pay later)</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('purchaseModal')">Cancel</button>
-      <button class="btn btn-accent" onclick="savePurchase()">Save Entry</button>
-    </div>
-  </div>
-</div>
-
-<!-- SALES -->
-<div class="modal-overlay" id="salesModal">
-  <div class="modal">
-    <div class="modal-title" id="salesModalTitle">New Sales Entry</div>
-    <div class="modal-sub">Record stock sold to a customer</div>
-    <input type="hidden" id="editSaleId">
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Customer</label>
-        <select class="form-select" id="saCustomer"><option value="">Select Customer</option></select></div>
-      <div class="form-row"><label class="form-lbl">HSN Code</label>
-        <select class="form-select" id="saHSN" onchange="autoFillSales()"><option value="">Select HSN</option></select></div>
-    </div>
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Product Name</label><input class="form-input" id="saProduct" readonly placeholder="Auto-filled"></div>
-      <div class="form-row"><label class="form-lbl">Date</label><input class="form-input" id="saDate" type="date"></div>
-    </div>
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Available Stock</label><input class="form-input" id="saStock" readonly placeholder="Auto-filled"></div>
-      <div class="form-row"><label class="form-lbl">Units to Sell</label><input class="form-input" id="saUnits" type="number" min="1" placeholder="0" oninput="calcSalesAmt()"></div>
-    </div>
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Price / Unit (৳)</label><input class="form-input" id="saPrice" readonly placeholder="Auto-filled"></div>
-      <div class="form-row"><label class="form-lbl">Total Amount (৳)</label><input class="form-input" id="saAmount" readonly placeholder="Auto-calculated"></div>
-    </div>
-    <div class="form-row">
-      <label class="form-lbl">Payment Status</label>
-      <select class="form-select" id="saPaid">
-        <option value="paid">Paid (cash in recorded)</option>
-        <option value="credit">On Credit (receive later)</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('salesModal')">Cancel</button>
-      <button class="btn btn-accent" onclick="saveSale()">Save Entry</button>
-    </div>
-  </div>
-</div>
-
-<!-- BALANCE LEDGER -->
-<div class="modal-overlay" id="ledgerModal">
-  <div class="modal">
-    <div class="modal-title" id="ledgerModalTitle">New Balance Entry</div>
-    <div class="modal-sub">Record inter-store goods exchange</div>
-    <input type="hidden" id="editLedgerId">
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Party (Store / Person)</label>
-        <input class="form-input" id="ledParty" placeholder="e.g. Ahmed Brothers Store"></div>
-      <div class="form-row"><label class="form-lbl">Date</label>
-        <input class="form-input" id="ledDate" type="date"></div>
-    </div>
-    <div class="form-row">
-      <label class="form-lbl">Type</label>
-      <select class="form-select" id="ledType" onchange="updateLedgerHint()">
-        <option value="owe">↑ I Took Goods (I owe them — payable)</option>
-        <option value="owed">↓ I Gave Goods (They owe me — receivable)</option>
-      </select>
-    </div>
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Product (optional)</label>
-        <select class="form-select" id="ledHSN" onchange="autoFillLedger()"><option value="">Select product</option></select></div>
-      <div class="form-row"><label class="form-lbl">Units (optional)</label>
-        <input class="form-input" id="ledUnits" type="number" min="0" placeholder="0" oninput="calcLedgerAmt()"></div>
-    </div>
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Amount (৳)</label>
-        <input class="form-input" id="ledAmount" type="number" min="1" placeholder="0"></div>
-      <div class="form-row" style="display:flex;flex-direction:column;justify-content:flex-end">
-        <label class="form-lbl">Settled?</label>
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
-          <input type="checkbox" id="ledSettled" style="width:16px;height:16px;accent-color:var(--accent)">
-          <span style="font-size:13px;color:var(--text2)">Already returned / paid</span>
-        </div>
-      </div>
-    </div>
-    <div class="form-row"><label class="form-lbl">Note (optional)</label>
-      <input class="form-input" id="ledNote" placeholder="e.g. Keyboards taken for urgent order"></div>
-    <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:4px">
-      💡 <b style="color:var(--text)">Impact:</b> <span id="ledgerHint" style="color:var(--accent)">Select type to see impact</span>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('ledgerModal')">Cancel</button>
-      <button class="btn btn-accent" onclick="saveLedger()">Save Entry</button>
-    </div>
-  </div>
-</div>
-
-<!-- CASH ENTRY -->
-<div class="modal-overlay" id="cashModal">
-  <div class="modal">
-    <div class="modal-title" id="cashModalTitle">New Cash Entry</div>
-    <div class="modal-sub">Record cash coming in or going out</div>
-    <input type="hidden" id="editCashId">
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Type</label>
-        <select class="form-select" id="cashType">
-          <option value="in">💚 Cash In (received)</option>
-          <option value="out">🔴 Cash Out (paid)</option>
-        </select>
-      </div>
-      <div class="form-row"><label class="form-lbl">Date</label>
-        <input class="form-input" id="cashDate" type="date"></div>
-    </div>
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Category</label>
-        <select class="form-select" id="cashCategory">
-          <option value="Sales">Sales Payment</option>
-          <option value="Purchase">Purchase Payment</option>
-          <option value="Ledger Settlement">Ledger Settlement</option>
-          <option value="Expense">Expense (rent, salary, etc.)</option>
-          <option value="Other Income">Other Income</option>
-          <option value="Other">Other</option>
-        </select>
-      </div>
-      <div class="form-row"><label class="form-lbl">Amount (৳)</label>
-        <input class="form-input" id="cashAmount" type="number" min="1" placeholder="0"></div>
-    </div>
-    <div class="form-row"><label class="form-lbl">Note (optional)</label>
-      <input class="form-input" id="cashNote" placeholder="e.g. Paid rent for March"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('cashModal')">Cancel</button>
-      <button class="btn btn-accent" onclick="saveCash()">Save Entry</button>
-    </div>
-  </div>
-</div>
-
-<!-- USER -->
-<div class="modal-overlay" id="userModal">
-  <div class="modal">
-    <div class="modal-title" id="userModalTitle">Add User</div>
-    <div class="modal-sub">Create a new staff account</div>
-    <input type="hidden" id="editUserId">
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Full Name</label><input class="form-input" id="uFullName" placeholder="e.g. Rahim Ahmed"></div>
-      <div class="form-row"><label class="form-lbl">Username</label><input class="form-input" id="uUsername" placeholder="e.g. rahim99"></div>
-    </div>
-    <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Password</label><input class="form-input" id="uPassword" type="password" placeholder="Min 6 characters"></div>
-      <div class="form-row"><label class="form-lbl">Role</label>
-        <select class="form-select" id="uRole">
-          <option value="staff">Staff</option>
-          <option value="manager">Manager</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('userModal')">Cancel</button>
-      <button class="btn btn-accent" onclick="saveUser()">Save User</button>
-    </div>
-  </div>
-</div>
-
-<!-- CONFIRM -->
-<div class="modal-overlay" id="confirmModal">
-  <div class="modal confirm-modal">
-    <div class="confirm-icon">🗑️</div>
-    <div class="modal-title">Delete Record?</div>
-    <div class="confirm-msg" id="confirmMsg">This action cannot be undone.</div>
-    <div class="modal-actions" style="justify-content:center;">
-      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
-      <button class="btn btn-danger" id="confirmOkBtn">Yes, Delete</button>
+    <div class="lhint">
+      Default accounts<br>
+      <b>admin</b> / admin123 &nbsp;·&nbsp;
+      <b>manager</b> / manager123 &nbsp;·&nbsp;
+      <b>staff</b> / staff123
     </div>
   </div>
 </div>
 
 <!-- TOAST -->
-<div class="toast hidden" id="toast"><span id="toastIcon">✅</span> <span id="toastMsg">Saved</span></div>
+<div class="toast hidden" id="toast"><span id="toastIcon">✅</span><span id="toastMsg"></span></div>
 
 <script src="firebase-config.js"></script>
-<script src="app.js"></script>
+<script src="db.js"></script>
+<script>
+// If already logged in, redirect to dashboard
+if (sessionStorage.getItem('spUser')) {
+  window.location.href = 'dashboard.html';
+}
+
+async function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  document.getElementById('loginErr').textContent = '';
+  if (!u || !p) { document.getElementById('loginErr').textContent = 'Please enter username and password.'; return; }
+  showLoader('Signing in…');
+  await loadDB();
+  const user = (window.DB.users||[]).find(x => x.username===u && x.password===p);
+  hideLoader();
+  if (!user) { document.getElementById('loginErr').textContent = '❌ Invalid username or password.'; return; }
+  sessionStorage.setItem('spUser', JSON.stringify(user));
+  window.location.href = 'dashboard.html';
+}
+document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+</script>
 </body>
 </html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personal Accounts — Students Point</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<div class="main">
+  <div class="pg-header">
+    <div class="pg-title">Personal Accounts</div>
+    <div class="pg-sub">Accounts Receivable (customers owe you) and Accounts Payable (you owe vendors)</div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('ar',this)">📥 Accounts Receivable</button>
+    <button class="tab-btn" onclick="switchTab('ap',this)">📤 Accounts Payable</button>
+  </div>
+
+  <!-- ACCOUNTS RECEIVABLE -->
+  <div class="tab-panel active" id="tab-ar">
+    <div class="info-box">📥 <b>Accounts Receivable</b> — Customers who purchased on credit. Balance = Credit sales amount. Net Balance = Balance − Payments Received.</div>
+    <div class="cards-grid cards-3" id="arCards"></div>
+    <div class="tbox">
+      <div class="tbox-hdr">
+        <span class="tbox-title">Customer Balances</span>
+        <button class="btn btn-primary btn-sm" onclick="openModal('arPayModal')">＋ Record Payment Received</button>
+      </div>
+      <table>
+        <thead><tr><th>Cust ID</th><th>Customer Name</th><th>Credit Balance (৳)</th><th>Payment Received (৳)</th><th>Net Balance (৳)</th><th>Status</th></tr></thead>
+        <tbody id="arTable"></tbody>
+      </table>
+    </div>
+    <div class="tbox">
+      <div class="tbox-hdr"><span class="tbox-title">Payment History</span></div>
+      <table>
+        <thead><tr><th>Date</th><th>Customer</th><th>Amount (৳)</th><th>Note</th><th>Actions</th></tr></thead>
+        <tbody id="arPayTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ACCOUNTS PAYABLE -->
+  <div class="tab-panel" id="tab-ap">
+    <div class="info-box">📤 <b>Accounts Payable</b> — Vendors you owe money to for credit purchases. Net Balance = Balance − Cash Payments Made.</div>
+    <div class="cards-grid cards-3" id="apCards"></div>
+    <div class="tbox">
+      <div class="tbox-hdr">
+        <span class="tbox-title">Vendor Balances</span>
+        <button class="btn btn-primary btn-sm" onclick="openModal('apPayModal')">＋ Record Cash Payment Made</button>
+      </div>
+      <table>
+        <thead><tr><th>Vendor Name</th><th>Credit Balance (৳)</th><th>Cash Paid (৳)</th><th>Net Balance (৳)</th><th>Status</th></tr></thead>
+        <tbody id="apTable"></tbody>
+      </table>
+    </div>
+    <div class="tbox">
+      <div class="tbox-hdr"><span class="tbox-title">Payment History</span></div>
+      <table>
+        <thead><tr><th>Date</th><th>Vendor</th><th>Amount (৳)</th><th>Note</th><th>Actions</th></tr></thead>
+        <tbody id="apPayTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- AR PAYMENT MODAL -->
+<div class="modal-overlay" id="arPayModal">
+  <div class="modal">
+    <div class="modal-title">Record Payment Received</div>
+    <div class="modal-sub">Customer paying off their credit balance</div>
+    <input type="hidden" id="editArPayId">
+    <div class="form-row"><label class="form-lbl">Customer</label>
+      <select class="form-select" id="arPayCust"><option value="">Select Customer</option></select></div>
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Amount (৳)</label><input class="form-input" id="arPayAmount" type="number" min="0" placeholder="0"></div>
+      <div class="form-row"><label class="form-lbl">Date</label><input class="form-input" id="arPayDate" type="date"></div>
+    </div>
+    <div class="form-row"><label class="form-lbl">Note (optional)</label><input class="form-input" id="arPayNote" placeholder="e.g. Cash received for Desktop order"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('arPayModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveArPay()">Save Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- AP PAYMENT MODAL -->
+<div class="modal-overlay" id="apPayModal">
+  <div class="modal">
+    <div class="modal-title">Record Cash Payment Made</div>
+    <div class="modal-sub">Paying off a vendor credit balance</div>
+    <input type="hidden" id="editApPayId">
+    <div class="form-row"><label class="form-lbl">Vendor</label>
+      <select class="form-select" id="apPayVendor"><option value="">Select Vendor</option></select></div>
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Amount (৳)</label><input class="form-input" id="apPayAmount" type="number" min="0" placeholder="0"></div>
+      <div class="form-row"><label class="form-lbl">Date</label><input class="form-input" id="apPayDate" type="date"></div>
+    </div>
+    <div class="form-row"><label class="form-lbl">Note (optional)</label><input class="form-input" id="apPayNote" placeholder="e.g. Paid GG Traders for Desktop batch"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('apPayModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveApPay()">Save Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal confirm-modal">
+    <div class="confirm-icon">🗑️</div>
+    <div class="modal-title">Delete?</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast hidden" id="toast"><span id="toastIcon">✅</span> <span id="toastMsg"></span></div>
+<script src="firebase-config.js"></script>
+<script src="db.js"></script>
+<script src="sidebar.js"></script>
+<script>
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  btn.classList.add('active');
+}
+
+function openModal(id){
+  if(id==='arPayModal'){
+    document.getElementById('editArPayId').value='';
+    const opts='<option value="">Select Customer</option>'+(DB.customers||[]).map(c=>`<option value="${c.custId}">${c.custId} — ${c.name}</option>`).join('');
+    document.getElementById('arPayCust').innerHTML=opts;
+    ['arPayAmount','arPayNote'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('arPayDate').value=today();
+  }
+  if(id==='apPayModal'){
+    document.getElementById('editApPayId').value='';
+    const vNames=[...new Set((DB.vendors||[]).map(v=>v.name))];
+    const opts='<option value="">Select Vendor</option>'+vNames.map(n=>`<option value="${n}">${n}</option>`).join('');
+    document.getElementById('apPayVendor').innerHTML=opts;
+    ['apPayAmount','apPayNote'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('apPayDate').value=today();
+  }
+  document.getElementById(id).classList.add('open');
+}
+
+// ─── ACCOUNTS RECEIVABLE ─────────────────────
+function renderAR(){
+  const ar=getARSummary();
+  const entries=Object.values(ar);
+  const totalBal=entries.reduce((a,b)=>a+b.balance,0);
+  const totalPaid=entries.reduce((a,b)=>a+b.paid,0);
+  const totalNet=entries.reduce((a,b)=>a+b.netBalance,0);
+  document.getElementById('arCards').innerHTML=`
+    <div class="card bl-blue"><div class="card-lbl">Total Credit Sales</div><div class="card-val blue">৳${fmt(totalBal)}</div><div class="card-sub">Outstanding from customers</div></div>
+    <div class="card bl-green"><div class="card-lbl">Total Received</div><div class="card-val green">৳${fmt(totalPaid)}</div><div class="card-sub">Payments collected</div></div>
+    <div class="card bl-${totalNet>0?'red':'green'}"><div class="card-lbl">Net Receivable</div><div class="card-val ${totalNet>0?'red':'green'}">৳${fmt(totalNet)}</div><div class="card-sub">${totalNet>0?'Still outstanding':'Fully collected'}</div></div>`;
+  document.getElementById('arTable').innerHTML=entries.length
+    ?entries.map(c=>`<tr>
+        <td><span class="pill pill-yellow">${c.custId}</span></td>
+        <td><b>${c.name}</b></td>
+        <td>৳${fmt(c.balance)}</td>
+        <td>৳${fmt(c.paid)}</td>
+        <td><b style="color:${c.netBalance>0?'var(--danger)':'var(--success)'}">৳${fmt(c.netBalance)}</b></td>
+        <td><span class="pill ${c.netBalance<=0?'pill-green':c.netBalance<c.balance?'pill-yellow':'pill-red'}">${c.netBalance<=0?'Cleared':c.netBalance<c.balance?'Partial':'Pending'}</span></td>
+      </tr>`).join('')
+    :'<tr class="empty-row"><td colspan="6">No accounts receivable data</td></tr>';
+
+  const pays=[...(DB.arPayments||[])].sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('arPayTable').innerHTML=pays.length
+    ?pays.map(p=>{
+      const c=DB.customers.find(x=>x.custId===p.custId);
+      return `<tr>
+        <td>${p.date}</td><td><b>${c?c.name:p.custId}</b></td>
+        <td><b style="color:var(--success)">৳${fmt(p.amount)}</b></td>
+        <td>${p.note||'—'}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="delArPay('${p.id}')">🗑️</button></td>
+      </tr>`;}).join('')
+    :'<tr class="empty-row"><td colspan="5">No payments recorded yet</td></tr>';
+}
+function saveArPay(){
+  const id=document.getElementById('editArPayId').value;
+  const custId=document.getElementById('arPayCust').value;
+  const o={custId,amount:Number(document.getElementById('arPayAmount').value),date:document.getElementById('arPayDate').value,note:document.getElementById('arPayNote').value.trim()};
+  if(!custId||!o.amount||!o.date){showToast('Fill all fields','err');return;}
+  if(id){const i=DB.arPayments.findIndex(p=>p.id===id);DB.arPayments[i]={...DB.arPayments[i],...o};}
+  else{
+    DB.arPayments.push({id:uid(),...o});
+    DB.cash.push({id:uid(),type:'in',category:'AR Payment',date:o.date,amount:o.amount,note:`Payment from ${custId}: ${o.note||''}`});
+  }
+  saveDB();closeModal('arPayModal');renderAR();showToast('Payment recorded');
+}
+function delArPay(id){confirmDelete('Delete this payment record?',()=>{DB.arPayments=DB.arPayments.filter(p=>p.id!==id);saveDB();renderAR();showToast('Deleted');});}
+
+// ─── ACCOUNTS PAYABLE ────────────────────────
+function renderAP(){
+  const ap=getAPSummary();
+  const entries=Object.values(ap);
+  const totalBal=entries.reduce((a,b)=>a+b.balance,0);
+  const totalPaid=entries.reduce((a,b)=>a+b.paid,0);
+  const totalNet=entries.reduce((a,b)=>a+b.netBalance,0);
+  document.getElementById('apCards').innerHTML=`
+    <div class="card bl-red"><div class="card-lbl">Total Credit Purchases</div><div class="card-val red">৳${fmt(totalBal)}</div><div class="card-sub">Owed to vendors</div></div>
+    <div class="card bl-green"><div class="card-lbl">Total Paid</div><div class="card-val green">৳${fmt(totalPaid)}</div><div class="card-sub">Already settled</div></div>
+    <div class="card bl-${totalNet>0?'red':'green'}"><div class="card-lbl">Net Payable</div><div class="card-val ${totalNet>0?'red':'green'}">৳${fmt(totalNet)}</div><div class="card-sub">${totalNet>0?'Still outstanding':'Fully paid'}</div></div>`;
+  document.getElementById('apTable').innerHTML=entries.length
+    ?entries.map(v=>`<tr>
+        <td><b>${v.name}</b></td>
+        <td>৳${fmt(v.balance)}</td>
+        <td>৳${fmt(v.paid)}</td>
+        <td><b style="color:${v.netBalance>0?'var(--danger)':'var(--success)'}">৳${fmt(v.netBalance)}</b></td>
+        <td><span class="pill ${v.netBalance<=0?'pill-green':v.netBalance<v.balance?'pill-yellow':'pill-red'}">${v.netBalance<=0?'Cleared':v.netBalance<v.balance?'Partial':'Pending'}</span></td>
+      </tr>`).join('')
+    :'<tr class="empty-row"><td colspan="5">No accounts payable data</td></tr>';
+
+  const pays=[...(DB.apPayments||[])].sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('apPayTable').innerHTML=pays.length
+    ?pays.map(p=>`<tr>
+        <td>${p.date}</td><td><b>${p.vendorName}</b></td>
+        <td><b style="color:var(--danger)">৳${fmt(p.amount)}</b></td>
+        <td>${p.note||'—'}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="delApPay('${p.id}')">🗑️</button></td>
+      </tr>`).join('')
+    :'<tr class="empty-row"><td colspan="5">No payments recorded yet</td></tr>';
+}
+function saveApPay(){
+  const id=document.getElementById('editApPayId').value;
+  const vendorName=document.getElementById('apPayVendor').value;
+  const o={vendorName,amount:Number(document.getElementById('apPayAmount').value),date:document.getElementById('apPayDate').value,note:document.getElementById('apPayNote').value.trim()};
+  if(!vendorName||!o.amount||!o.date){showToast('Fill all fields','err');return;}
+  if(id){const i=DB.apPayments.findIndex(p=>p.id===id);DB.apPayments[i]={...DB.apPayments[i],...o};}
+  else{
+    DB.apPayments.push({id:uid(),...o});
+    DB.cash.push({id:uid(),type:'out',category:'AP Payment',date:o.date,amount:o.amount,note:`Payment to ${vendorName}: ${o.note||''}`});
+  }
+  saveDB();closeModal('apPayModal');renderAP();showToast('Payment recorded');
+}
+function delApPay(id){confirmDelete('Delete this payment record?',()=>{DB.apPayments=DB.apPayments.filter(p=>p.id!==id);saveDB();renderAP();showToast('Deleted');});}
+
+(async()=>{
+  if(!requireAuth()) return;
+  await loadDB();
+  buildSidebar('ar');
+  renderAR();renderAP();
+  if(location.hash==='#ap'){
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    document.querySelector('[onclick*="ap"]').classList.add('active');
+    document.getElementById('tab-ap').classList.add('active');
+  }
+})();
+</script>
+</body>
+</html>

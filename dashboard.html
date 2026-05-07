@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Students Point</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<div class="main">
+
+  <div class="pg-header">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <div class="pg-title">Dashboard</div>
+        <div class="pg-sub" id="dashDate"></div>
+      </div>
+      <a href="statements.html"><button class="btn btn-primary">📃 View Statements</button></a>
+    </div>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="cards-grid cards-4" id="dashCards"></div>
+
+  <!-- ALERTS -->
+  <div id="dashAlerts"></div>
+
+  <!-- BALANCE CHART -->
+  <div class="bal-chart-wrap" id="balChartWrap">
+    <div class="bal-chart-title">⚖️ Balance Ledger Overview — Active Entries by Party</div>
+    <div id="balanceChart"></div>
+  </div>
+
+  <!-- BOTTOM GRID -->
+  <div class="grid2">
+    <div class="tbox">
+      <div class="tbox-hdr"><span class="tbox-title">🏆 Top Customers by Sales</span></div>
+      <table><thead><tr><th>Customer</th><th>Total (৳)</th></tr></thead>
+      <tbody id="topCustTable"></tbody></table>
+    </div>
+    <div class="tbox">
+      <div class="tbox-hdr"><span class="tbox-title">🔥 Top Products by Units Sold</span></div>
+      <table><thead><tr><th>Product</th><th>Units</th></tr></thead>
+      <tbody id="topProdTable"></tbody></table>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="tbox">
+      <div class="tbox-hdr"><span class="tbox-title">🛎️ Recent Service Revenue</span></div>
+      <table><thead><tr><th>Date</th><th>Name</th><th>Amount (৳)</th></tr></thead>
+      <tbody id="recentSvcTable"></tbody></table>
+    </div>
+    <div class="tbox">
+      <div class="tbox-hdr"><span class="tbox-title">💸 Recent Operating Expenses</span></div>
+      <table><thead><tr><th>Date</th><th>Name</th><th>Category</th><th>Amount (৳)</th></tr></thead>
+      <tbody id="recentExpTable"></tbody></table>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast hidden" id="toast"><span id="toastIcon">✅</span> <span id="toastMsg"></span></div>
+
+<script src="firebase-config.js"></script>
+<script src="db.js"></script>
+<script src="sidebar.js"></script>
+<script>
+(async () => {
+  if (!requireAuth()) return;
+  await loadDB();
+  buildSidebar('dashboard');
+
+  document.getElementById('dashDate').textContent =
+    new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  const totPu  = (DB.purchases||[]).reduce((a,b)=>a+Number(b.amount),0);
+  const totSa  = (DB.sales||[]).reduce((a,b)=>a+Number(b.amount),0);
+  const totSvc = (DB.serviceRevenue||[]).reduce((a,b)=>a+Number(b.amount),0);
+  const totExp = (DB.opExpenses||[]).reduce((a,b)=>a+Number(b.amount),0);
+  const inv    = getInvMap();
+  const totStock = Object.values(inv).reduce((a,b)=>a+b.stockAmt,0);
+  const totalRev = totSa + totSvc;
+  const totalExp = totPu + totExp;
+  const netIncome = totalRev - totalExp;
+  const cash   = getCashSummary();
+
+  document.getElementById('dashCards').innerHTML = `
+    <div class="card bl-blue"><div class="card-lbl">Total Sales Revenue</div><div class="card-val blue">৳${fmt(totSa)}</div><div class="card-sub">All sales transactions</div></div>
+    <div class="card bl-teal"><div class="card-lbl">Service Revenue</div><div class="card-val teal">৳${fmt(totSvc)}</div><div class="card-sub">All service income</div></div>
+    <div class="card bl-red"><div class="card-lbl">Total Expenses</div><div class="card-val red">৳${fmt(totalExp)}</div><div class="card-sub">Purchase + Op. Expenses</div></div>
+    <div class="card bl-${netIncome>=0?'green':'red'}"><div class="card-lbl">Net Income</div><div class="card-val ${netIncome>=0?'green':'red'}">৳${fmt(netIncome)}</div><div class="card-sub">${netIncome>=0?'Profit':'Loss'}</div></div>
+    <div class="card bl-blue"><div class="card-lbl">Stock Value</div><div class="card-val blue">৳${fmt(totStock)}</div><div class="card-sub">Current inventory</div></div>
+    <div class="card bl-${cash.onHand>=0?'teal':'red'}"><div class="card-lbl">Cash on Hand</div><div class="card-val ${cash.onHand>=0?'teal':'red'}">৳${fmt(cash.onHand)}</div><div class="card-sub">In: ৳${fmt(cash.totalIn)} · Out: ৳${fmt(cash.totalOut)}</div></div>
+    <div class="card bl-warn"><div class="card-lbl">Total Purchase</div><div class="card-val warn">৳${fmt(totPu)}</div><div class="card-sub">All purchase transactions</div></div>
+    <div class="card bl-purple"><div class="card-lbl">Op. Expenses</div><div class="card-val purple">৳${fmt(totExp)}</div><div class="card-sub">Rent, Salary, Utility etc.</div></div>`;
+
+  // Alerts
+  const vMap={};
+  (DB.vendors||[]).forEach(v=>vMap[v.hsn]=v.phone);
+  const low=Object.entries(inv).filter(([,i])=>i.stock<=5&&i.purchased>0);
+  const ab=document.getElementById('dashAlerts');
+  if(!low.length){
+    ab.innerHTML=`<div class="alert-box alert-success"><div class="alert-title" style="color:var(--success)">✅ Stock Alerts — All products have healthy stock levels</div></div>`;
+  } else {
+    ab.innerHTML=`<div class="alert-box alert-warn"><div class="alert-title" style="color:var(--warning)">⚠️ Low Stock Alerts (${low.length} products)</div>
+      ${low.map(([hsn,i])=>`<div class="alert-row">⚠️ <b>${i.name}</b> — only <b style="color:var(--danger)">${i.stock}</b> units left · Vendor: ${vMap[hsn]||'—'}</div>`).join('')}
+    </div>`;
+  }
+
+  // Balance chart
+  const { partyMap, netBalance, totalOwe, totalOwed } = getBalanceSummary();
+  const entries=Object.entries(partyMap).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,8);
+  const chart=document.getElementById('balanceChart');
+  if(!entries.length){
+    document.getElementById('balChartWrap').style.display='none';
+  } else {
+    const maxAmt=Math.max(...entries.map(([,v])=>Math.abs(v)));
+    chart.innerHTML=entries.map(([party,val])=>{
+      const isOwe=val<0,abs=Math.abs(val),pct=maxAmt>0?Math.round(abs/maxAmt*100):0;
+      return `<div class="bal-bar-row">
+        <div class="bal-bar-label" title="${party}">${party}</div>
+        <div class="bal-bar-track"><div class="bal-bar-fill ${isOwe?'owe':'owed'}" style="width:${pct}%">${pct>20?(isOwe?'Payable':'Receivable'):''}</div></div>
+        <div class="bal-bar-amt" style="color:${isOwe?'var(--danger)':'var(--success)'}">${isOwe?'−':'+'}৳${fmt(abs)}</div>
+      </div>`;
+    }).join('');
+    chart.innerHTML+=`<div class="net-bal-box">
+      <span style="font-size:13px;color:var(--text2)">Net Balance Position (Pending)</span>
+      <span style="font-size:15px;font-weight:800;color:${netBalance>=0?'var(--success)':'var(--danger)'}">
+        ${netBalance>=0?'Receivable':'Payable'} ৳${fmt(Math.abs(netBalance))}</span></div>`;
+  }
+
+  // Top customers
+  const cTot={};
+  (DB.sales||[]).forEach(s=>{cTot[s.customer]=(cTot[s.customer]||0)+Number(s.amount);});
+  const topC=Object.entries(cTot).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  document.getElementById('topCustTable').innerHTML=topC.length
+    ?topC.map(([n,a],i)=>`<tr><td>${i+1}. ${n}</td><td><b>৳${fmt(a)}</b></td></tr>`).join('')
+    :'<tr class="empty-row"><td colspan="2">No sales yet</td></tr>';
+
+  // Top products
+  const pTot={};
+  (DB.sales||[]).forEach(s=>{pTot[s.product]=(pTot[s.product]||0)+Number(s.units);});
+  const topP=Object.entries(pTot).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  document.getElementById('topProdTable').innerHTML=topP.length
+    ?topP.map(([n,u],i)=>`<tr><td>${i+1}. ${n}</td><td><b>${u}</b></td></tr>`).join('')
+    :'<tr class="empty-row"><td colspan="2">No sales yet</td></tr>';
+
+  // Recent service revenue
+  const svc=[...(DB.serviceRevenue||[])].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  document.getElementById('recentSvcTable').innerHTML=svc.length
+    ?svc.map(s=>`<tr><td>${s.date}</td><td>${s.name}</td><td><b>৳${fmt(s.amount)}</b></td></tr>`).join('')
+    :'<tr class="empty-row"><td colspan="3">No service revenue yet</td></tr>';
+
+  // Recent expenses
+  const exp=[...(DB.opExpenses||[])].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  document.getElementById('recentExpTable').innerHTML=exp.length
+    ?exp.map(e=>`<tr><td>${e.date}</td><td>${e.name}</td><td><span class="pill pill-purple">${e.category}</span></td><td><b>৳${fmt(e.amount)}</b></td></tr>`).join('')
+    :'<tr class="empty-row"><td colspan="4">No expenses yet</td></tr>';
+})();
+</script>
+</body>
+</html>

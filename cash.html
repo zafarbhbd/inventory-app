@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cash Book — Students Point</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<div id="sidebar-root"></div>
+<div class="main">
+  <div class="pg-header">
+    <div class="pg-title">Cash Book</div>
+    <div class="pg-sub">All cash flowing in and out of your shop — auto-populated from paid transactions</div>
+  </div>
+
+  <div class="cards-grid cards-3" id="cashCards"></div>
+
+  <div class="info-box">
+    💵 <b>Cash In</b> — Money received: paid sales, service revenue, AR payments, other income.<br>
+    💸 <b>Cash Out</b> — Money paid: paid purchases, operating expenses, AP payments, other payments.<br>
+    Entries are <b>auto-created</b> when you record a paid sale, purchase or service. You can also add manual entries.
+  </div>
+
+  <div class="filter-bar">
+    <label>Filter Period:</label>
+    <button class="quick-btn active" onclick="filterCash(1,this)">Today</button>
+    <button class="quick-btn" onclick="filterCash(7,this)">7 Days</button>
+    <button class="quick-btn" onclick="filterCash(30,this)">1 Month</button>
+    <button class="quick-btn" onclick="filterCash(365,this)">1 Year</button>
+    <button class="quick-btn" onclick="filterCash(0,this)">All Time</button>
+    <span style="color:var(--text3)">|</span>
+    <label>From:</label><input class="form-input" id="cashFrom" type="date" style="width:140px;padding:7px 10px">
+    <label>To:</label><input class="form-input" id="cashTo" type="date" style="width:140px;padding:7px 10px">
+    <button class="btn btn-primary btn-sm" onclick="renderCash()">Apply</button>
+  </div>
+
+  <div class="toolbar">
+    <input class="search-input" placeholder="🔍 Search cash entries…" oninput="renderCash(this.value)">
+    <button class="btn btn-primary" onclick="openModal('cashModal')">＋ Manual Cash Entry</button>
+  </div>
+
+  <div class="tbox"><table>
+    <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Amount (৳)</th><th>Note</th><th>Actions</th></tr></thead>
+    <tbody id="cashTable"></tbody>
+  </table></div>
+</div>
+
+<!-- CASH MODAL -->
+<div class="modal-overlay" id="cashModal">
+  <div class="modal">
+    <div class="modal-title" id="cashModalTitle">Manual Cash Entry</div>
+    <div class="modal-sub">Record cash not automatically tracked</div>
+    <input type="hidden" id="editCashId">
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Type</label>
+        <select class="form-select" id="cashType">
+          <option value="in">💚 Cash In (received)</option>
+          <option value="out">🔴 Cash Out (paid)</option>
+        </select>
+      </div>
+      <div class="form-row"><label class="form-lbl">Date</label><input class="form-input" id="cashDate" type="date"></div>
+    </div>
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Category</label>
+        <select class="form-select" id="cashCategory">
+          <option value="Sales">Sales Payment</option>
+          <option value="Service Revenue">Service Revenue</option>
+          <option value="Purchase">Purchase Payment</option>
+          <option value="AR Payment">AR Collection</option>
+          <option value="AP Payment">AP Settlement</option>
+          <option value="Rent Expense">Rent Expense</option>
+          <option value="Salary Expense">Salary Expense</option>
+          <option value="Utility Expense">Utility Expense</option>
+          <option value="Other Income">Other Income</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-row"><label class="form-lbl">Amount (৳)</label><input class="form-input" id="cashAmount" type="number" min="1" placeholder="0"></div>
+    </div>
+    <div class="form-row"><label class="form-lbl">Note (optional)</label><input class="form-input" id="cashNote" placeholder="e.g. Paid shop rent for March"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('cashModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCash()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal confirm-modal">
+    <div class="confirm-icon">🗑️</div><div class="modal-title">Delete?</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+<div class="toast hidden" id="toast"><span id="toastIcon">✅</span> <span id="toastMsg"></span></div>
+<script src="firebase-config.js"></script>
+<script src="db.js"></script>
+<script src="sidebar.js"></script>
+<script>
+let _cf=null,_ct=null;
+function filterCash(days,btn){
+  document.querySelectorAll('.quick-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(days===0){_cf=null;_ct=null;document.getElementById('cashFrom').value='';document.getElementById('cashTo').value='';}
+  else{
+    const d=new Date();d.setDate(d.getDate()-days+1);
+    _cf=d.toISOString().split('T')[0];_ct=today();
+    document.getElementById('cashFrom').value=_cf;document.getElementById('cashTo').value=_ct;
+  }
+  renderCash();
+}
+function openModal(id){
+  document.getElementById('cashModalTitle').textContent='Manual Cash Entry';
+  document.getElementById('editCashId').value='';
+  ['cashAmount','cashNote'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('cashDate').value=today();
+  document.getElementById('cashType').value='in';
+  document.getElementById('cashCategory').value='Sales';
+  document.getElementById(id).classList.add('open');
+}
+function renderCash(q=''){
+  const from=document.getElementById('cashFrom').value||_cf||null;
+  const to=document.getElementById('cashTo').value||_ct||null;
+  const all=[...(DB.cash||[])].filter(e=>inRange(e.date,from,to))
+    .filter(e=>!q||(e.category+(e.note||'')).toLowerCase().includes(q.toLowerCase()))
+    .sort((a,b)=>b.date.localeCompare(a.date));
+  const totalIn=all.filter(e=>e.type==='in').reduce((a,b)=>a+Number(b.amount),0);
+  const totalOut=all.filter(e=>e.type==='out').reduce((a,b)=>a+Number(b.amount),0);
+  const onHand=totalIn-totalOut;
+  document.getElementById('cashCards').innerHTML=`
+    <div class="card bl-green"><div class="card-lbl">Cash In (Period)</div><div class="card-val green">৳${fmt(totalIn)}</div><div class="card-sub">${all.filter(e=>e.type==='in').length} entries</div></div>
+    <div class="card bl-red"><div class="card-lbl">Cash Out (Period)</div><div class="card-val red">৳${fmt(totalOut)}</div><div class="card-sub">${all.filter(e=>e.type==='out').length} entries</div></div>
+    <div class="card bl-${onHand>=0?'teal':'red'}"><div class="card-lbl">Net Cash (Period)</div><div class="card-val ${onHand>=0?'teal':'red'}">৳${fmt(onHand)}</div><div class="card-sub">In − Out</div></div>`;
+  document.getElementById('cashTable').innerHTML=all.length
+    ?all.map(e=>`<tr>
+        <td>${e.date}</td>
+        <td><span class="pill ${e.type==='in'?'pill-green':'pill-red'}">${e.type==='in'?'💚 Cash In':'🔴 Cash Out'}</span></td>
+        <td>${e.category}</td>
+        <td><b style="color:${e.type==='in'?'var(--success)':'var(--danger)'}">${e.type==='in'?'+':'−'}৳${fmt(e.amount)}</b></td>
+        <td>${e.note||'—'}</td>
+        <td><div class="act-btns">
+          <button class="btn btn-blue btn-sm" onclick='editCash(${JSON.stringify(e)})'>✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="delCash('${e.id}')">🗑️</button>
+        </div></td></tr>`).join('')
+    +'<tr class="tfoot-row"><td colspan="3"><b>Period Total</b></td><td><b style="color:var(--success)">In: ৳'+fmt(totalIn)+'</b> &nbsp;|&nbsp; <b style="color:var(--danger)">Out: ৳'+fmt(totalOut)+'</b></td><td colspan="2"></td></tr>'
+    :'<tr class="empty-row"><td colspan="6">No cash entries in this period</td></tr>';
+}
+function editCash(e){
+  document.getElementById('cashModalTitle').textContent='Edit Cash Entry';
+  document.getElementById('editCashId').value=e.id;
+  document.getElementById('cashType').value=e.type;document.getElementById('cashDate').value=e.date;
+  document.getElementById('cashCategory').value=e.category;document.getElementById('cashAmount').value=e.amount;
+  document.getElementById('cashNote').value=e.note||'';
+  document.getElementById('cashModal').classList.add('open');
+}
+function saveCash(){
+  const id=document.getElementById('editCashId').value;
+  const o={type:document.getElementById('cashType').value,date:document.getElementById('cashDate').value,
+    category:document.getElementById('cashCategory').value,amount:Number(document.getElementById('cashAmount').value),
+    note:document.getElementById('cashNote').value.trim()};
+  if(!o.date||!o.amount){showToast('Fill date and amount','err');return;}
+  if(id){const i=DB.cash.findIndex(e=>e.id===id);DB.cash[i]={...DB.cash[i],...o};}
+  else DB.cash.push({id:uid(),...o});
+  saveDB();closeModal('cashModal');renderCash();showToast('Cash entry saved');
+}
+function delCash(id){confirmDelete('Delete this cash entry?',()=>{DB.cash=DB.cash.filter(e=>e.id!==id);saveDB();renderCash();showToast('Deleted');});}
+
+(async()=>{
+  if(!requireAuth())return;
+  await loadDB();
+  buildSidebar('cash');
+  document.getElementById('cashFrom').value='';
+  document.getElementById('cashTo').value='';
+  renderCash();
+})();
+</script>
+</body>
+</html>
