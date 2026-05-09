@@ -166,14 +166,14 @@ window.setSyncStatus = (state) => {
 
 // ─── AUTH ─────────────────────────────────────
 window.requireAuth = () => {
-  const raw = sessionStorage.getItem('spUser');
+  const raw = localStorage.getItem('spUser');
   if (!raw) { window.location.href='index.html'; return false; }
   window.currentUser = JSON.parse(raw);
   return true;
 };
 
 window.doLogout = () => {
-  sessionStorage.removeItem('spUser');
+  localStorage.removeItem('spUser');
   window.location.href = 'index.html';
 };
 
@@ -197,12 +197,19 @@ window.confirmDelete = (msg, cb) => {
 };
 
 // ─── MODALS ───────────────────────────────────
-window.closeModal = (id) => document.getElementById(id).classList.remove('open');
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.modal-overlay').forEach(o =>
-    o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); })
-  );
-});
+window.closeModal = (id) => {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+};
+function attachModalOverlays() {
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    if (o._overlayBound) return;
+    o._overlayBound = true;
+    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+  });
+}
+document.addEventListener('DOMContentLoaded', attachModalOverlays);
+window.attachModalOverlays = attachModalOverlays;
 
 // ─── SIDEBAR ACTIVE LINK ─────────────────────
 window.setSidebarActive = (page) => {

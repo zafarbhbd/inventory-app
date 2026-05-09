@@ -1,5 +1,5 @@
 // =============================================
-//  sidebar.js — injects sidebar into every page
+//  sidebar.js — Students Point
 // =============================================
 
 function buildSidebar(activePage) {
@@ -7,10 +7,18 @@ function buildSidebar(activePage) {
   const isAdmin = u.role === 'admin';
 
   const html = `
-  <div class="sidebar">
+  <!-- Mobile overlay -->
+  <div class="sb-overlay" id="sbOverlay" onclick="closeSidebar()"></div>
+
+  <!-- Hamburger button for mobile -->
+  <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+
+  <div class="sidebar" id="mainSidebar">
     <div class="s-brand">
       <div class="s-brand-name">Students <span>Point</span></div>
-      <div class="s-brand-sub">Accounting & Inventory</div>
+      <div class="s-brand-sub">Accounting &amp; Inventory</div>
     </div>
     <div class="s-user-bar">
       <div class="s-user-info">👤 <b id="sidebarUser">${u.name||'—'}</b></div>
@@ -20,49 +28,49 @@ function buildSidebar(activePage) {
 
     <div class="nav">
       <div class="nav-sec">Overview</div>
-      <a href="dashboard.html"><div class="nav-item ${activePage==='dashboard'?'active':''}" data-page="dashboard">
+      <a href="dashboard.html" onclick="closeSidebar()"><div class="nav-item ${activePage==='dashboard'?'active':''}" data-page="dashboard">
         <span class="ni">📊</span>Dashboard</div></a>
 
       <div class="nav-sec">Records</div>
-      <a href="records.html"><div class="nav-item ${activePage==='records'?'active':''}" data-page="records">
+      <a href="records.html" onclick="closeSidebar()"><div class="nav-item ${activePage==='records'?'active':''}" data-page="records">
         <span class="ni">🗂️</span>Products / Vendors / Customers</div></a>
 
       <div class="nav-sec">Transactions</div>
-      <a href="transactions.html"><div class="nav-item ${activePage==='transactions'?'active':''}" data-page="transactions">
-        <span class="ni">💳</span>Purchase & Sales Entry</div></a>
-      <a href="transactions.html#service"><div class="nav-item ${activePage==='service'?'active':''}" data-page="service">
+      <a href="transactions.html" onclick="closeSidebar()"><div class="nav-item ${activePage==='transactions'?'active':''}" data-page="transactions">
+        <span class="ni">💳</span>Purchase &amp; Sales Entry</div></a>
+      <a href="transactions.html#service" onclick="closeSidebar()"><div class="nav-item ${activePage==='service'?'active':''}" data-page="service">
         <span class="ni">🛎️</span>Service Revenue</div></a>
-      <a href="transactions.html#opex"><div class="nav-item ${activePage==='opex'?'active':''}" data-page="opex">
+      <a href="transactions.html#opex" onclick="closeSidebar()"><div class="nav-item ${activePage==='opex'?'active':''}" data-page="opex">
         <span class="ni">💸</span>Operating Expenses</div></a>
 
       <div class="nav-sec">Stock</div>
-      <a href="inventory.html"><div class="nav-item ${activePage==='inventory'?'active':''}" data-page="inventory">
+      <a href="inventory.html" onclick="closeSidebar()"><div class="nav-item ${activePage==='inventory'?'active':''}" data-page="inventory">
         <span class="ni">🗄️</span>Inventory</div></a>
 
       <div class="nav-sec">Personal Accounts</div>
-      <a href="accounts.html#ar"><div class="nav-item ${activePage==='ar'?'active':''}" data-page="ar">
+      <a href="accounts.html" onclick="closeSidebar()"><div class="nav-item ${activePage==='ar'?'active':''}" data-page="ar">
         <span class="ni">📥</span>Accounts Receivable</div></a>
-      <a href="accounts.html#ap"><div class="nav-item ${activePage==='ap'?'active':''}" data-page="ap">
+      <a href="accounts.html#ap" onclick="closeSidebar()"><div class="nav-item ${activePage==='ap'?'active':''}" data-page="ap">
         <span class="ni">📤</span>Accounts Payable</div></a>
 
       <div class="nav-sec">Balance Sheet Items</div>
-      <a href="balance-sheet-items.html"><div class="nav-item ${activePage==='bsitems'?'active':''}" data-page="bsitems">
+      <a href="balance-sheet-items.html" onclick="closeSidebar()"><div class="nav-item ${activePage==='bsitems'?'active':''}" data-page="bsitems">
         <span class="ni">🏛️</span>Assets / Liabilities / Equity</div></a>
 
       <div class="nav-sec">Finance</div>
-      <a href="ledger.html"><div class="nav-item ${activePage==='ledger'?'active':''}" data-page="ledger">
+      <a href="ledger.html" onclick="closeSidebar()"><div class="nav-item ${activePage==='ledger'?'active':''}" data-page="ledger">
         <span class="ni">⚖️</span>Balance Ledger</div></a>
-      <a href="cash.html"><div class="nav-item ${activePage==='cash'?'active':''}" data-page="cash">
+      <a href="cash.html" onclick="closeSidebar()"><div class="nav-item ${activePage==='cash'?'active':''}" data-page="cash">
         <span class="ni">💵</span>Cash Book</div></a>
 
       <div class="nav-sec">Financial Statements</div>
-      <a href="statements.html#income"><div class="nav-item ${activePage==='income'?'active':''}" data-page="income">
+      <a href="statements.html" onclick="closeSidebar()"><div class="nav-item ${activePage==='income'?'active':''}" data-page="income">
         <span class="ni">📃</span>Income Statement</div></a>
-      <a href="statements.html#balance"><div class="nav-item ${activePage==='balance'?'active':''}" data-page="balance">
+      <a href="statements.html#balance" onclick="closeSidebar()"><div class="nav-item ${activePage==='balance'?'active':''}" data-page="balance">
         <span class="ni">📊</span>Balance Sheet</div></a>
 
       ${isAdmin ? `<div class="nav-sec">Admin</div>
-      <a href="users.html"><div class="nav-item ${activePage==='users'?'active':''}" data-page="users" id="usersNav">
+      <a href="users.html" onclick="closeSidebar()"><div class="nav-item ${activePage==='users'?'active':''}" data-page="users" id="usersNav">
         <span class="ni">🔐</span>Manage Users</div></a>` : ''}
     </div>
 
@@ -82,6 +90,25 @@ function buildSidebar(activePage) {
 
   const target = document.getElementById('sidebar-root');
   if (target) target.innerHTML = html;
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('mainSidebar');
+  const ov = document.getElementById('sbOverlay');
+  const hb = document.getElementById('hamburgerBtn');
+  if (!sb) return;
+  const open = sb.classList.toggle('sb-open');
+  if (ov) ov.classList.toggle('sb-open', open);
+  if (hb) hb.classList.toggle('active', open);
+}
+
+function closeSidebar() {
+  const sb = document.getElementById('mainSidebar');
+  const ov = document.getElementById('sbOverlay');
+  const hb = document.getElementById('hamburgerBtn');
+  if (sb) sb.classList.remove('sb-open');
+  if (ov) ov.classList.remove('sb-open');
+  if (hb) hb.classList.remove('active');
 }
 
 // ─── EXPORT ──────────────────────────────────

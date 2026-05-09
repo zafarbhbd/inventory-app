@@ -4,42 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Students Point — Login</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="style.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-
 <div class="login-wrap">
   <div class="login-box">
     <div class="login-logo">Students Point</div>
-    <div class="login-sub">Accounting & Inventory Management System</div>
+    <div class="login-sub">Accounting &amp; Inventory Management System</div>
     <label class="lbl">Username</label>
     <input class="linput" id="loginUser" type="text" placeholder="Enter username" autocomplete="off">
     <label class="lbl">Password</label>
     <input class="linput" id="loginPass" type="password" placeholder="Enter password">
     <button class="lbtn" onclick="doLogin()">Sign In →</button>
     <div class="lerr" id="loginErr"></div>
-    <div class="lhint">
-      Default accounts<br>
-      <b>admin</b> / admin123 &nbsp;·&nbsp;
-      <b>manager</b> / manager123 &nbsp;·&nbsp;
-      <b>staff</b> / staff123
-    </div>
   </div>
 </div>
-
-<!-- TOAST -->
 <div class="toast hidden" id="toast"><span id="toastIcon">✅</span><span id="toastMsg"></span></div>
-
 <script src="firebase-config.js"></script>
 <script src="db.js"></script>
 <script>
-// If already logged in, redirect to dashboard
-if (sessionStorage.getItem('spUser')) {
-  window.location.href = 'dashboard.html';
-}
-
+if (localStorage.getItem('spUser')) { window.location.href = 'dashboard.html'; }
 async function doLogin() {
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value;
@@ -50,7 +37,7 @@ async function doLogin() {
   const user = (window.DB.users||[]).find(x => x.username===u && x.password===p);
   hideLoader();
   if (!user) { document.getElementById('loginErr').textContent = '❌ Invalid username or password.'; return; }
-  sessionStorage.setItem('spUser', JSON.stringify(user));
+  localStorage.setItem('spUser', JSON.stringify(user));
   window.location.href = 'dashboard.html';
 }
 document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });

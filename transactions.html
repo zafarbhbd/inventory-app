@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Transactions — Students Point</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="style.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -457,14 +458,16 @@ function delOpex(id){confirmDelete('Delete this expense?',()=>{DB.opExpenses=DB.
 (async()=>{
   if(!requireAuth()) return;
   await loadDB();
-  buildSidebar('transactions');
+  const hash = location.hash;
+  const activeNav = hash==='#service'?'service': hash==='#opex'?'opex':'transactions';
+  buildSidebar(activeNav);
   renderPurchase();renderSales();renderService();renderOpex();
-  if(location.hash==='#service'){
+  if(hash==='#service'){
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
     document.querySelector('[onclick*="service"]').classList.add('active');
     document.getElementById('tab-service').classList.add('active');
-  } else if(location.hash==='#opex'){
+  } else if(hash==='#opex'){
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
     document.querySelector('[onclick*="opex"]').classList.add('active');

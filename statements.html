@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Financial Statements — Students Point</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="style.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -284,14 +285,15 @@ function renderBalanceSheet() {
 (async () => {
   if (!requireAuth()) return;
   await loadDB();
-  buildSidebar('income');
+  const hash = location.hash;
+  buildSidebar(hash==='#balance'?'balance':'income');
   // Default: current month
   const d = new Date(); d.setDate(1);
   document.getElementById('incFrom').value = d.toISOString().split('T')[0];
   document.getElementById('incTo').value = today();
   renderIncomeStatement();
   // Check hash
-  if (location.hash === '#balance') {
+  if (hash === '#balance') {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn')[1].classList.add('active');
