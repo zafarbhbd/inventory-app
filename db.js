@@ -201,15 +201,6 @@ window.closeModal = (id) => {
   const el = document.getElementById(id);
   if (el) el.classList.remove('open');
 };
-function attachModalOverlays() {
-  document.querySelectorAll('.modal-overlay').forEach(o => {
-    if (o._overlayBound) return;
-    o._overlayBound = true;
-    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
-  });
-}
-document.addEventListener('DOMContentLoaded', attachModalOverlays);
-window.attachModalOverlays = attachModalOverlays;
 
 // ─── SIDEBAR ACTIVE LINK ─────────────────────
 window.setSidebarActive = (page) => {
