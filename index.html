@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="style.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
 </head>
 <body>
 <div class="login-wrap">
@@ -34,7 +35,8 @@ async function doLogin() {
   if (!u || !p) { document.getElementById('loginErr').textContent = 'Please enter username and password.'; return; }
   showLoader('Signing in…');
   await loadDB();
-  const user = (window.DB.users||[]).find(x => x.username===u && x.password===p);
+  const matchedUser = (window.DB.users||[]).find(x => x.username === u);
+  const user = matchedUser && await bcrypt.compare(p, matchedUser.password) ? matchedUser : null;
   hideLoader();
   if (!user) { document.getElementById('loginErr').textContent = '❌ Invalid username or password.'; return; }
   localStorage.setItem('spUser', JSON.stringify(user));

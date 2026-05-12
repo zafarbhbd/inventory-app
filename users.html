@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="style.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
 </head>
 <body>
 <div id="sidebar-root"></div>
@@ -130,17 +131,19 @@ function editUser(u) {
   document.getElementById('userModal').classList.add('open');
 }
 
-function saveUser() {
+async function saveUser() {
   const id = document.getElementById('editUserId').value;
+  const plainPassword = document.getElementById('uPassword').value;
   const o = {
     name:     document.getElementById('uFullName').value.trim(),
     username: document.getElementById('uUsername').value.trim(),
-    password: document.getElementById('uPassword').value,
     role:     document.getElementById('uRole').value
   };
-  if (!o.name || !o.username || !o.password) { showToast('Fill all fields', 'err'); return; }
-  if (o.password.length < 6) { showToast('Password must be at least 6 characters', 'err'); return; }
+  if (!o.name || !o.username || !plainPassword) { showToast('Fill all fields', 'err'); return; }
+  if (plainPassword.length < 6) { showToast('Password must be at least 6 characters', 'err'); return; }
   if (!id && (DB.users||[]).find(u => u.username === o.username)) { showToast('Username already taken', 'err'); return; }
+  const salt = await bcrypt.genSalt(10);
+  o.password = await bcrypt.hash(plainPassword, salt);
   if (id) {
     const i = DB.users.findIndex(u => u.id === id);
     DB.users[i] = { ...DB.users[i], ...o };
