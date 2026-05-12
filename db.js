@@ -5,9 +5,9 @@
 
 const SEED = {
   users: [
-    { id:'u1', name:'Administrator', username:'admin',   password:'admin123',   role:'admin'   },
-    { id:'u2', name:'Manager',       username:'manager', password:'manager123', role:'manager' },
-    { id:'u3', name:'Staff Member',  username:'staff',   password:'staff123',   role:'staff'   },
+    { id:'u1', name:'Administrator', username:'admin',   password:'',   role:'admin'   },
+    { id:'u2', name:'Manager',       username:'manager', password:'', role:'manager' },
+    { id:'u3', name:'Staff Member',  username:'staff',   password:'',   role:'staff'   },
   ],
   products: [
     { id:'p1',  hsn:'N1001', name:'Smart Watch',        cost:980,   price:1176   },
