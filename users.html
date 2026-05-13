@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="style.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
 </head>
 <body>
 <div id="sidebar-root"></div>
@@ -119,6 +119,16 @@ function renderUsers() {
           : ''}
       </div>
     </div>`).join('');
+}
+
+function editUser(u) {
+  document.getElementById('userModalTitle').textContent = 'Edit User';
+  document.getElementById('editUserId').value  = u.id;
+  document.getElementById('uFullName').value   = u.name;
+  document.getElementById('uUsername').value   = u.username;
+  document.getElementById('uPassword').value   = '';
+  document.getElementById('uRole').value       = u.role;
+  document.getElementById('userModal').classList.add('open');
 }
 
 function editUser(u) {
