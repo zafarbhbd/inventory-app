@@ -131,16 +131,6 @@ function editUser(u) {
   document.getElementById('userModal').classList.add('open');
 }
 
-function editUser(u) {
-  document.getElementById('userModalTitle').textContent = 'Edit User';
-  document.getElementById('editUserId').value  = u.id;
-  document.getElementById('uFullName').value   = u.name;
-  document.getElementById('uUsername').value   = u.username;
-  document.getElementById('uPassword').value   = '';
-  document.getElementById('uRole').value       = u.role;
-  document.getElementById('userModal').classList.add('open');
-}
-
 async function saveUser() {
   const id = document.getElementById('editUserId').value;
   const plainPassword = document.getElementById('uPassword').value;
