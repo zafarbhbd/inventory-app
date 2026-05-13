@@ -7,6 +7,16 @@
 <link rel="stylesheet" href="style.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+// inline bcrypt check
+window.addEventListener('load', function() {
+  if (typeof bcrypt === 'undefined') {
+    console.error('bcrypt failed to load');
+  } else {
+    console.log('bcrypt loaded successfully');
+  }
+});
+</script>
 <script src="bcrypt.min.js"></script>
 </head>
 <body>
