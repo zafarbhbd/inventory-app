@@ -36,9 +36,8 @@ async function doLogin() {
   if (!u || !p) { document.getElementById('loginErr').textContent = 'Please enter username and password.'; return; }
   showLoader('Signing in…');
   await loadDB();
-  const user = (window.DB.users||[]).find(x => x.username===u && x.password===p);
-  // const matchedUser = (window.DB.users||[]).find(x => x.username === u);
-  // const user = matchedUser && await bcrypt.compare(p, matchedUser.password) ? matchedUser : null;
+  const matchedUser = (window.DB.users||[]).find(x => x.username === u);
+  const user = matchedUser && await bcrypt.compare(p, matchedUser.password) ? matchedUser : null;
   hideLoader();
   if (!user) { document.getElementById('loginErr').textContent = '❌ Invalid username or password.'; return; }
   localStorage.setItem('spUser', JSON.stringify(user));
