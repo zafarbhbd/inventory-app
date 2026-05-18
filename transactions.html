@@ -320,12 +320,19 @@ function savePurchase(){
   if(!o.hsn||!o.units||!o.date){showToast('Fill all fields','err');return;}
   if(id){const i=DB.purchases.findIndex(p=>p.id===id);DB.purchases[i]={...DB.purchases[i],...o};}
   else{
-    DB.purchases.push({id:uid(),...o});
-    if(o.paid==='paid') DB.cash.push({id:uid(),type:'out',category:'Purchase',date:o.date,amount:o.amount,note:`Purchase: ${o.product}`});
+    const newId=uid();
+    const cashId=uid();
+    DB.purchases.push({id:newId,...o,cashId});
+    if(o.paid==='paid') DB.cash.push({id:cashId,type:'out',category:'Purchase',date:o.date,amount:o.amount,note:`Purchase: ${o.product}`});
   }
   saveDB();closeModal('purchaseModal');renderPurchase();showToast('Purchase saved');
 }
-function delPurchase(id){confirmDelete('Delete this purchase entry?',()=>{DB.purchases=DB.purchases.filter(p=>p.id!==id);saveDB();renderPurchase();showToast('Deleted');});}
+function delPurchase(id){confirmDelete('Delete this purchase entry?',()=>{
+  const rec=DB.purchases.find(p=>p.id===id);
+  if(rec&&rec.cashId) DB.cash=DB.cash.filter(e=>e.id!==rec.cashId);
+  DB.purchases=DB.purchases.filter(p=>p.id!==id);
+  saveDB();renderPurchase();showToast('Deleted');
+});}
 
 // ─── SALES CRUD ──────────────────────────────
 function renderSales(q=''){
@@ -369,12 +376,19 @@ function saveSale(){
     amount:Number(document.getElementById('saAmount').value),paid:document.getElementById('saPaid').value};
   if(id){const i=DB.sales.findIndex(s=>s.id===id);DB.sales[i]={...DB.sales[i],...o};}
   else{
-    DB.sales.push({id:uid(),...o});
-    if(o.paid==='paid') DB.cash.push({id:uid(),type:'in',category:'Sales',date:o.date,amount:o.amount,note:`Sale: ${o.product} to ${o.customer}`});
+    const newId=uid();
+    const cashId=uid();
+    DB.sales.push({id:newId,...o,cashId});
+    if(o.paid==='paid') DB.cash.push({id:cashId,type:'in',category:'Sales',date:o.date,amount:o.amount,note:`Sale: ${o.product} to ${o.customer}`});
   }
   saveDB();closeModal('salesModal');renderSales();showToast('Sale saved');
 }
-function delSale(id){confirmDelete('Delete this sale entry?',()=>{DB.sales=DB.sales.filter(s=>s.id!==id);saveDB();renderSales();showToast('Deleted');});}
+function delSale(id){confirmDelete('Delete this sale entry?',()=>{
+  const rec=DB.sales.find(s=>s.id===id);
+  if(rec&&rec.cashId) DB.cash=DB.cash.filter(e=>e.id!==rec.cashId);
+  DB.sales=DB.sales.filter(s=>s.id!==id);
+  saveDB();renderSales();showToast('Deleted');
+});}
 
 // ─── SERVICE REVENUE CRUD ────────────────────
 function renderService(q=''){
@@ -407,12 +421,19 @@ function saveService(){
   if(!o.name||!o.amount||!o.date){showToast('Fill all fields','err');return;}
   if(id){const i=DB.serviceRevenue.findIndex(s=>s.id===id);DB.serviceRevenue[i]={...DB.serviceRevenue[i],...o};}
   else{
-    DB.serviceRevenue.push({id:uid(),...o});
-    DB.cash.push({id:uid(),type:'in',category:'Service Revenue',date:o.date,amount:o.amount,note:o.name});
+    const newId=uid();
+    const cashId=uid();
+    DB.serviceRevenue.push({id:newId,...o,cashId});
+    DB.cash.push({id:cashId,type:'in',category:'Service Revenue',date:o.date,amount:o.amount,note:o.name});
   }
   saveDB();closeModal('serviceModal');renderService();showToast('Service revenue saved');
 }
-function delService(id){confirmDelete('Delete this service entry?',()=>{DB.serviceRevenue=DB.serviceRevenue.filter(s=>s.id!==id);saveDB();renderService();showToast('Deleted');});}
+function delService(id){confirmDelete('Delete this service entry?',()=>{
+  const rec=DB.serviceRevenue.find(s=>s.id===id);
+  if(rec&&rec.cashId) DB.cash=DB.cash.filter(e=>e.id!==rec.cashId);
+  DB.serviceRevenue=DB.serviceRevenue.filter(s=>s.id!==id);
+  saveDB();renderService();showToast('Deleted');
+});}
 
 // ─── OPEX CRUD ───────────────────────────────
 function renderOpex(q=''){
@@ -447,12 +468,19 @@ function saveOpex(){
   if(!o.name||!o.amount||!o.date){showToast('Fill all fields','err');return;}
   if(id){const i=DB.opExpenses.findIndex(e=>e.id===id);DB.opExpenses[i]={...DB.opExpenses[i],...o};}
   else{
-    DB.opExpenses.push({id:uid(),...o});
-    DB.cash.push({id:uid(),type:'out',category:o.category,date:o.date,amount:o.amount,note:o.name});
+    const newId=uid();
+    const cashId=uid();
+    DB.opExpenses.push({id:newId,...o,cashId});
+    DB.cash.push({id:cashId,type:'out',category:o.category,date:o.date,amount:o.amount,note:o.name});
   }
   saveDB();closeModal('opexModal');renderOpex();showToast('Expense saved');
 }
-function delOpex(id){confirmDelete('Delete this expense?',()=>{DB.opExpenses=DB.opExpenses.filter(e=>e.id!==id);saveDB();renderOpex();showToast('Deleted');});}
+function delOpex(id){confirmDelete('Delete this expense?',()=>{
+  const rec=DB.opExpenses.find(e=>e.id===id);
+  if(rec&&rec.cashId) DB.cash=DB.cash.filter(e=>e.id!==rec.cashId);
+  DB.opExpenses=DB.opExpenses.filter(e=>e.id!==id);
+  saveDB();renderOpex();showToast('Deleted');
+});}
 
 // Check hash on load to open correct tab
 (async()=>{

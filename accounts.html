@@ -193,12 +193,19 @@ function saveArPay(){
   if(!custId||!o.amount||!o.date){showToast('Fill all fields','err');return;}
   if(id){const i=DB.arPayments.findIndex(p=>p.id===id);DB.arPayments[i]={...DB.arPayments[i],...o};}
   else{
-    DB.arPayments.push({id:uid(),...o});
-    DB.cash.push({id:uid(),type:'in',category:'AR Payment',date:o.date,amount:o.amount,note:`Payment from ${custId}: ${o.note||''}`});
+    const newId=uid();
+    const cashId=uid();
+    DB.arPayments.push({id:newId,...o,cashId});
+    DB.cash.push({id:cashId,type:'in',category:'AR Payment',date:o.date,amount:o.amount,note:`Payment from ${custId}: ${o.note||''}`});
   }
   saveDB();closeModal('arPayModal');renderAR();showToast('Payment recorded');
 }
-function delArPay(id){confirmDelete('Delete this payment record?',()=>{DB.arPayments=DB.arPayments.filter(p=>p.id!==id);saveDB();renderAR();showToast('Deleted');});}
+function delArPay(id){confirmDelete('Delete this payment record?',()=>{
+  const rec=DB.arPayments.find(p=>p.id===id);
+  if(rec&&rec.cashId) DB.cash=DB.cash.filter(e=>e.id!==rec.cashId);
+  DB.arPayments=DB.arPayments.filter(p=>p.id!==id);
+  saveDB();renderAR();showToast('Deleted');
+});}
 
 // ─── ACCOUNTS PAYABLE ────────────────────────
 function renderAP(){
@@ -238,12 +245,19 @@ function saveApPay(){
   if(!vendorName||!o.amount||!o.date){showToast('Fill all fields','err');return;}
   if(id){const i=DB.apPayments.findIndex(p=>p.id===id);DB.apPayments[i]={...DB.apPayments[i],...o};}
   else{
-    DB.apPayments.push({id:uid(),...o});
-    DB.cash.push({id:uid(),type:'out',category:'AP Payment',date:o.date,amount:o.amount,note:`Payment to ${vendorName}: ${o.note||''}`});
+    const newId=uid();
+    const cashId=uid();
+    DB.apPayments.push({id:newId,...o,cashId});
+    DB.cash.push({id:cashId,type:'out',category:'AP Payment',date:o.date,amount:o.amount,note:`Payment to ${vendorName}: ${o.note||''}`});
   }
   saveDB();closeModal('apPayModal');renderAP();showToast('Payment recorded');
 }
-function delApPay(id){confirmDelete('Delete this payment record?',()=>{DB.apPayments=DB.apPayments.filter(p=>p.id!==id);saveDB();renderAP();showToast('Deleted');});}
+function delApPay(id){confirmDelete('Delete this payment record?',()=>{
+  const rec=DB.apPayments.find(p=>p.id===id);
+  if(rec&&rec.cashId) DB.cash=DB.cash.filter(e=>e.id!==rec.cashId);
+  DB.apPayments=DB.apPayments.filter(p=>p.id!==id);
+  saveDB();renderAP();showToast('Deleted');
+});}
 
 (async()=>{
   if(!requireAuth()) return;

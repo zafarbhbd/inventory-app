@@ -15,7 +15,6 @@
     <div class="pg-title">Balance Sheet Items</div>
     <div class="pg-sub">Manage assets, liabilities and equity — these populate the Balance Sheet report</div>
   </div>
-
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('assets',this)">🏦 Assets</button>
     <button class="tab-btn" onclick="switchTab('liabilities',this)">📋 Liabilities</button>
@@ -24,14 +23,14 @@
 
   <!-- ASSETS -->
   <div class="tab-panel active" id="tab-assets">
-    <div class="info-box">🏦 <b>Assets</b> — Things your business owns (cash, computers, furniture, equipment). Balances here will appear on the Balance Sheet.</div>
+    <div class="info-box">🏦 <b>Assets</b> — Things your business owns (cash, computers, furniture, equipment). When adding, choose Cash Payment (reduces cash balance) or Later Payment (adds to Accounts Payable).</div>
     <div class="cards-grid cards-3" id="assetCards"></div>
     <div class="toolbar">
-      <span style="font-size:13px;color:var(--text2)">Items auto-include: Cash on Hand, Accounts Receivable, Stock Value</span>
+      <span style="font-size:13px;color:var(--text2)">Auto-included: Cash on Hand, Accounts Receivable, Stock Value</span>
       <button class="btn btn-primary" onclick="openItemModal('asset')">＋ Add Asset</button>
     </div>
     <div class="tbox"><table>
-      <thead><tr><th>Asset ID</th><th>Name of Asset</th><th>Balance (৳)</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Asset ID</th><th>Name of Asset</th><th>Balance (৳)</th><th>Payment</th><th>Actions</th></tr></thead>
       <tbody id="assetsTable"></tbody>
     </table></div>
   </div>
@@ -41,7 +40,7 @@
     <div class="info-box">📋 <b>Liabilities</b> — What your business owes (rent payable, loans etc.). Balances appear on the Balance Sheet.</div>
     <div class="cards-grid cards-3" id="liabilityCards"></div>
     <div class="toolbar">
-      <span style="font-size:13px;color:var(--text2)">Items auto-include: Accounts Payable</span>
+      <span style="font-size:13px;color:var(--text2)">Auto-included: Accounts Payable</span>
       <button class="btn btn-primary" onclick="openItemModal('liability')">＋ Add Liability</button>
     </div>
     <div class="tbox"><table>
@@ -76,7 +75,22 @@
       <div class="form-row"><label class="form-lbl" id="itemIdLabel">Asset ID</label><input class="form-input" id="itemCode" placeholder="e.g. A001"></div>
       <div class="form-row"><label class="form-lbl" id="itemNameLabel">Name</label><input class="form-input" id="itemName" placeholder="e.g. Computer"></div>
     </div>
-    <div class="form-row"><label class="form-lbl">Balance (৳)</label><input class="form-input" id="itemBalance" type="number" min="0" placeholder="0"></div>
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Balance (৳)</label><input class="form-input" id="itemBalance" type="number" min="0" placeholder="0"></div>
+      <div class="form-row" id="paymentTypeRow">
+        <label class="form-lbl">Payment Type</label>
+        <select class="form-select" id="itemPayType">
+          <option value="cash">💵 Cash Payment (paid now)</option>
+          <option value="later">📋 Later Payment (Accounts Payable)</option>
+        </select>
+      </div>
+    </div>
+    <!-- Vendor name — shown only for later payment -->
+    <div class="form-row" id="vendorNameRow" style="display:none">
+      <label class="form-lbl">Vendor / Supplier Name</label>
+      <input class="form-input" id="itemVendorName" placeholder="e.g. ABC Furniture">
+    </div>
+    <div class="form-row"><label class="form-lbl">Date</label><input class="form-input" id="itemDate" type="date"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('itemModal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveItem()">Save</button>
@@ -108,6 +122,13 @@ function switchTab(tab,btn){
   btn.classList.add('active');
 }
 
+// Show/hide vendor name field based on payment type
+document.addEventListener('change', function(e){
+  if(e.target.id==='itemPayType'){
+    document.getElementById('vendorNameRow').style.display = e.target.value==='later'?'block':'none';
+  }
+});
+
 function openItemModal(type, item=null){
   document.getElementById('editItemType').value=type;
   document.getElementById('editItemId').value=item?item.id:'';
@@ -121,6 +142,13 @@ function openItemModal(type, item=null){
   document.getElementById('itemCode').value=item?item[codeField[type]]:'';
   document.getElementById('itemName').value=item?item.name:'';
   document.getElementById('itemBalance').value=item?item.balance:'';
+  document.getElementById('itemDate').value=item?item.date||today():today();
+  // Payment type row only for assets
+  document.getElementById('paymentTypeRow').style.display=type==='asset'?'block':'none';
+  document.getElementById('vendorNameRow').style.display='none';
+  document.getElementById('itemPayType').value=item?item.payType||'cash':'cash';
+  document.getElementById('itemVendorName').value=item?item.vendorName||'':'';
+  if(item&&item.payType==='later') document.getElementById('vendorNameRow').style.display='block';
   document.getElementById('itemModal').classList.add('open');
 }
 
@@ -129,13 +157,64 @@ function saveItem(){
   const id=document.getElementById('editItemId').value;
   const codeField={asset:'assetId',liability:'liabilityId',equity:'equityId'};
   const arr={asset:DB.assets,liability:DB.liabilities,equity:DB.equity};
-  const o={[codeField[type]]:document.getElementById('itemCode').value.trim(),
+  const balance=Number(document.getElementById('itemBalance').value);
+  const date=document.getElementById('itemDate').value;
+  const o={
+    [codeField[type]]:document.getElementById('itemCode').value.trim(),
     name:document.getElementById('itemName').value.trim(),
-    balance:Number(document.getElementById('itemBalance').value)};
+    balance,
+    date
+  };
   if(!o.name||!o[codeField[type]]){showToast('Fill all fields','err');return;}
-  if(id){const i=arr[type].findIndex(x=>x.id===id);arr[type][i]={...arr[type][i],...o};}
-  else arr[type].push({id:uid(),...o});
+
+  // Payment logic — only for assets on new entry
+  if(type==='asset'&&!id){
+    const payType=document.getElementById('itemPayType').value;
+    o.payType=payType;
+    if(payType==='cash'){
+      // Deduct from cash book
+      DB.cash.push({id:uid(),type:'out',category:'Asset Purchase',date,amount:balance,
+        note:`Cash paid for asset: ${o.name}`});
+    } else {
+      // Add to accounts payable via AP payments tracking
+      const vendorName=document.getElementById('itemVendorName').value.trim()||o.name+' Supplier';
+      o.vendorName=vendorName;
+      // Add to apPayments as a liability entry — negative (they owe)
+      // We add it as a credit purchase to AP
+      DB.apPayments.push({id:uid(),vendorName,amount:0,date,
+        note:`Asset credit purchase: ${o.name} (to be paid)`});
+      // Add vendor to vendors list if not exists for AP tracking
+      if(!DB.vendors.find(v=>v.name===vendorName)){
+        DB.vendors.push({id:uid(),hsn:'',product:o.name,name:vendorName,phone:'',address:''});
+      }
+      // Record as a credit purchase in purchases for AP balance
+      DB.purchases.push({id:uid(),hsn:'',product:o.name,vendor:vendorName,date,
+        units:1,cost:balance,amount:balance,paid:'credit',
+        note:`Asset credit purchase: ${o.name}`});
+    }
+  }
+
+  if(id){
+    const i=arr[type].findIndex(x=>x.id===id);
+    if(i>-1) arr[type][i]={...arr[type][i],...o};
+  } else {
+    arr[type].push({id:uid(),...o});
+  }
+  // Ensure DB arrays are updated
+  DB.assets=arr.asset||DB.assets;
+  DB.liabilities=arr.liability||DB.liabilities;
+  DB.equity=arr.equity||DB.equity;
   saveDB();closeModal('itemModal');renderAll();showToast('Saved');
+}
+
+// FIX: delete now correctly updates DB arrays
+function delItem(type,id){
+  confirmDelete('Delete this item?',()=>{
+    if(type==='asset')      DB.assets      = DB.assets.filter(x=>x.id!==id);
+    if(type==='liability')  DB.liabilities = DB.liabilities.filter(x=>x.id!==id);
+    if(type==='equity')     DB.equity      = DB.equity.filter(x=>x.id!==id);
+    saveDB();renderAll();showToast('Deleted');
+  });
 }
 
 function renderAssets(){
@@ -152,17 +231,19 @@ function renderAssets(){
     <div class="card bl-blue"><div class="card-lbl">Auto: Accounts Receivable</div><div class="card-val blue">৳${fmt(arNet)}</div><div class="card-sub">Net outstanding from customers</div></div>
     <div class="card bl-green"><div class="card-lbl">Total Assets</div><div class="card-val green">৳${fmt(total)}</div><div class="card-sub">Auto + Manual items</div></div>`;
   document.getElementById('assetsTable').innerHTML=
-    `<tr style="background:#f0fdf4"><td colspan="3" style="padding:10px 14px;font-size:12px;color:var(--success)">
-      <b>Auto-included:</b> Cash on Hand ৳${fmt(cash.onHand)} · AR ৳${fmt(arNet)} · Stock ৳${fmt(stockVal)}</td><td></td></tr>`
+    `<tr style="background:#f0fdf4"><td colspan="4" style="padding:10px 14px;font-size:12px;color:var(--success)">
+      <b>Auto-included:</b> Cash ৳${fmt(cash.onHand)} · AR ৳${fmt(arNet)} · Stock ৳${fmt(stockVal)}</td><td></td></tr>`
     +(manual.length?manual.map(a=>`<tr>
         <td><span class="pill pill-blue">${a.assetId}</span></td>
-        <td><b>${a.name}</b></td><td>৳${fmt(a.balance)}</td>
+        <td><b>${a.name}</b></td>
+        <td>৳${fmt(a.balance)}</td>
+        <td><span class="pill ${a.payType==='later'?'pill-yellow':'pill-green'}">${a.payType==='later'?'📋 Later':'💵 Cash'}</span></td>
         <td><div class="act-btns">
           <button class="btn btn-blue btn-sm" onclick='openItemModal("asset",${JSON.stringify(a)})'>✏️</button>
           <button class="btn btn-danger btn-sm" onclick="delItem('asset','${a.id}')">🗑️</button>
         </div></td></tr>`).join('')
-      :'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">No manual assets added yet</td></tr>')
-    +`<tr class="tfoot-row"><td colspan="2"><b>Total Assets (incl. auto)</b></td><td><b>৳${fmt(total)}</b></td><td></td></tr>`;
+      :'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:16px">No manual assets added yet</td></tr>')
+    +`<tr class="tfoot-row"><td colspan="3"><b>Total Assets (incl. auto)</b></td><td><b>৳${fmt(total)}</b></td><td></td></tr>`;
 }
 
 function renderLiabilities(){
@@ -194,7 +275,9 @@ function renderEquity(){
   const totSvc=(DB.serviceRevenue||[]).reduce((a,b)=>a+Number(b.amount),0);
   const totPu=(DB.purchases||[]).reduce((a,b)=>a+Number(b.amount),0);
   const totExp=(DB.opExpenses||[]).reduce((a,b)=>a+Number(b.amount),0);
-  const netIncome=(totSa+totSvc)-(totPu+totExp);
+  const inv=getInvMap();
+  const stockVal=Object.values(inv).reduce((a,b)=>a+b.stockAmt,0);
+  const netIncome=(totSa+totSvc+stockVal)-(totPu+totExp);
   const manual=DB.equity||[];
   const manualTotal=manual.reduce((a,b)=>a+Number(b.balance),0);
   const total=netIncome+manualTotal;
@@ -216,10 +299,6 @@ function renderEquity(){
     +`<tr class="tfoot-row"><td colspan="2"><b>Total Equity (incl. auto)</b></td><td><b>৳${fmt(total)}</b></td><td></td></tr>`;
 }
 
-function delItem(type,id){
-  const arr={asset:DB.assets,liability:DB.liabilities,equity:DB.equity};
-  confirmDelete('Delete this item?',()=>{arr[type]=arr[type].filter(x=>x.id!==id);DB[type+'s']=arr[type];saveDB();renderAll();showToast('Deleted');});
-}
 function renderAll(){ renderAssets(); renderLiabilities(); renderEquity(); }
 
 (async()=>{

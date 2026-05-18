@@ -20,7 +20,6 @@
       <button class="btn btn-primary" onclick="window.print()">🖨️ Print Statements</button>
     </div>
   </div>
-
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('income',this)">📃 Income Statement</button>
     <button class="tab-btn" onclick="switchTab('balance',this)">📊 Balance Sheet</button>
@@ -28,7 +27,6 @@
 
   <!-- INCOME STATEMENT -->
   <div class="tab-panel active" id="tab-income">
-    <!-- Date filter -->
     <div class="filter-bar">
       <label>Period:</label>
       <button class="quick-btn active" onclick="setIncomePeriod(30,this)">This Month</button>
@@ -48,7 +46,8 @@
   <!-- BALANCE SHEET -->
   <div class="tab-panel" id="tab-balance">
     <div class="info-box">
-      📊 The Balance Sheet shows your financial position <b>as of today</b>. Asset, Liability and Equity values are pulled from the <a href="balance-sheet-items.html" style="color:var(--accent)">Balance Sheet Items</a> page plus auto-calculated values.
+      📊 The Balance Sheet shows your financial position <b>as of today</b>. Values are pulled from the
+      <a href="balance-sheet-items.html" style="color:var(--accent)">Balance Sheet Items</a> page plus auto-calculated values.
     </div>
     <div id="balanceSheet"></div>
   </div>
@@ -81,30 +80,34 @@ function setIncomePeriod(days, btn) {
   renderIncomeStatement();
 }
 
+// ── SHARED NET INCOME CALCULATOR ──────────────
+// Used by both Income Statement and Balance Sheet
+// Formula: (Sales + Service + Stock) - (Purchases + OpExpenses)
+function calcNetIncome(from, to) {
+  const sales     = (DB.sales||[]).filter(s => inRange(s.date, from, to));
+  const purchases = (DB.purchases||[]).filter(p => inRange(p.date, from, to));
+  const svcRev    = (DB.serviceRevenue||[]).filter(s => inRange(s.date, from, to));
+  const opExp     = (DB.opExpenses||[]).filter(e => inRange(e.date, from, to));
+  const inv       = getInvMap();
+  const totSales  = sales.reduce((a,b) => a + Number(b.amount), 0);
+  const totSvc    = svcRev.reduce((a,b) => a + Number(b.amount), 0);
+  const stockVal  = Object.values(inv).reduce((a,b) => a + b.stockAmt, 0);
+  const totPurch  = purchases.reduce((a,b) => a + Number(b.amount), 0);
+  const totOpExp  = opExp.reduce((a,b) => a + Number(b.amount), 0);
+  const expCats   = {};
+  opExp.forEach(e => { expCats[e.category] = (expCats[e.category]||0) + Number(e.amount); });
+  return { totSales, totSvc, stockVal, totPurch, totOpExp, expCats,
+           totRev: totSales + totSvc + stockVal,
+           totExp: totPurch + totOpExp,
+           netIncome: (totSales + totSvc + stockVal) - (totPurch + totOpExp) };
+}
+
 // ─── INCOME STATEMENT ────────────────────────
 function renderIncomeStatement() {
   const from = document.getElementById('incFrom').value;
   const to   = document.getElementById('incTo').value;
   const label = from && to ? `${from} to ${to}` : from ? `From ${from}` : to ? `Up to ${to}` : 'All Time';
-
-  const sales     = (DB.sales||[]).filter(s => inRange(s.date, from, to));
-  const purchases = (DB.purchases||[]).filter(p => inRange(p.date, from, to));
-  const svcRev    = (DB.serviceRevenue||[]).filter(s => inRange(s.date, from, to));
-  const opExp     = (DB.opExpenses||[]).filter(e => inRange(e.date, from, to));
-
-  const totSales = sales.reduce((a,b) => a + Number(b.amount), 0);
-  const totSvc   = svcRev.reduce((a,b) => a + Number(b.amount), 0);
-  const inv      = getInvMap();
-  const stockVal = Object.values(inv).reduce((a,b) => a + b.stockAmt, 0);
-  const totRev   = totSales + totSvc + stockVal;
-  const totPurch = purchases.reduce((a,b) => a + Number(b.amount), 0);
-
-  // Group operating expenses by category
-  const expCats = {};
-  opExp.forEach(e => { expCats[e.category] = (expCats[e.category]||0) + Number(e.amount); });
-  const totOpExp = opExp.reduce((a,b) => a + Number(b.amount), 0);
-  const totExp   = totPurch + totOpExp;
-  const netIncome = totRev - totExp;
+  const { totSales, totSvc, stockVal, totPurch, totOpExp, expCats, totRev, totExp, netIncome } = calcNetIncome(from, to);
 
   document.getElementById('incomeStatement').innerHTML = `
   <div class="report-wrap">
@@ -113,13 +116,10 @@ function renderIncomeStatement() {
       <div class="report-title">Income Statement</div>
       <div class="report-date">Period: ${label} &nbsp;·&nbsp; Generated: ${new Date().toLocaleDateString('en-IN')}</div>
     </div>
-
     <table class="rep-table">
       <tr><td class="particulars" style="font-weight:700;font-size:13px;padding-bottom:4px">Particulars</td>
           <td class="amount" style="font-weight:700;font-size:13px;padding-bottom:4px">Tk.</td>
           <td class="amount" style="font-weight:700;font-size:13px;padding-bottom:4px">Tk.</td></tr>
-
-      <!-- REVENUES -->
       <tr class="sec-head"><td colspan="3">Revenues:</td></tr>
       <tr><td class="particulars indent">Sales Revenue</td><td></td><td class="amount">৳${fmt(totSales)}</td></tr>
       <tr><td class="particulars indent">Service Revenue</td><td></td><td class="amount">৳${fmt(totSvc)}</td></tr>
@@ -128,13 +128,9 @@ function renderIncomeStatement() {
         <td class="particulars" style="font-weight:700">Total Revenues</td>
         <td></td><td class="amount" style="font-weight:800;color:var(--success)">৳${fmt(totRev)}</td>
       </tr>
-
       <tr><td colspan="3" style="padding:8px 0"></td></tr>
-
-      <!-- EXPENSES -->
       <tr class="sec-head"><td colspan="3">Less: Expenses:</td></tr>
       <tr><td class="particulars indent">Purchases</td><td class="amount">৳${fmt(totPurch)}</td><td></td></tr>
-
       ${Object.keys(expCats).length ? `
       <tr><td class="particulars indent" style="color:var(--text2);font-size:12px;padding-top:8px">Operating Expenses:</td><td></td><td></td></tr>
       ${Object.entries(expCats).map(([cat, amt]) =>
@@ -142,15 +138,11 @@ function renderIncomeStatement() {
       ).join('')}
       <tr><td class="particulars indent" style="font-weight:600">Total Operating Expenses</td><td class="amount" style="font-weight:600">৳${fmt(totOpExp)}</td><td></td></tr>
       ` : `<tr><td class="particulars indent" style="color:var(--text3)">Operating Expenses</td><td class="amount" style="color:var(--text3)">৳0</td><td></td></tr>`}
-
       <tr class="sub-total">
         <td class="particulars" style="font-weight:700">Total Expenses</td>
         <td></td><td class="amount" style="font-weight:800;color:var(--danger)">৳${fmt(totExp)}</td>
       </tr>
-
       <tr><td colspan="3" style="padding:6px 0"></td></tr>
-
-      <!-- NET INCOME -->
       <tr class="grand-total">
         <td class="particulars">Net Income</td>
         <td></td>
@@ -160,39 +152,36 @@ function renderIncomeStatement() {
   </div>`;
 }
 
-// ─── BALANCE SHEET ───────────────────────────
+// ─── BALANCE SHEET — A4 PORTRAIT LAYOUT ──────
 function renderBalanceSheet() {
   const dateStr = new Date().toLocaleDateString('en-IN', {year:'numeric',month:'long',day:'numeric'});
 
-  // ── ASSETS ──
+  // ASSETS
   const cash     = getCashSummary();
   const ar       = getARSummary();
   const inv      = getInvMap();
   const arNet    = Object.values(ar).reduce((a,b) => a + b.netBalance, 0);
   const stockVal = Object.values(inv).reduce((a,b) => a + b.stockAmt, 0);
   const manualAssets = DB.assets || [];
-  const totalAutoAssets = cash.onHand + arNet + stockVal;
   const totalManualAssets = manualAssets.reduce((a,b) => a + Number(b.balance), 0);
-  const totalAssets = totalAutoAssets + totalManualAssets;
+  const totalAssets = cash.onHand + arNet + stockVal + totalManualAssets;
 
-  // ── LIABILITIES ──
+  // LIABILITIES
   const ap    = getAPSummary();
   const apNet = Object.values(ap).reduce((a,b) => a + b.netBalance, 0);
   const manualLiab = DB.liabilities || [];
   const totalManualLiab = manualLiab.reduce((a,b) => a + Number(b.balance), 0);
   const totalLiab = apNet + totalManualLiab;
 
-  // ── EQUITY ──
-  const totSa  = (DB.sales||[]).reduce((a,b) => a + Number(b.amount), 0);
-  const totSvc = (DB.serviceRevenue||[]).reduce((a,b) => a + Number(b.amount), 0);
-  const totPu  = (DB.purchases||[]).reduce((a,b) => a + Number(b.amount), 0);
-  const totExp = (DB.opExpenses||[]).reduce((a,b) => a + Number(b.amount), 0);
-  const netIncome = (totSa + totSvc) - (totPu + totExp);
+  // EQUITY — uses same formula as income statement (all time, no date filter)
+  const { netIncome } = calcNetIncome('', '');
   const manualEquity = DB.equity || [];
   const totalManualEquity = manualEquity.reduce((a,b) => a + Number(b.balance), 0);
   const totalEquity = netIncome + totalManualEquity;
   const totalLiabEquity = totalLiab + totalEquity;
+  const balanced = Math.abs(totalAssets - totalLiabEquity) < 1;
 
+  // A4 PORTRAIT: stacked layout — Assets on top, Liabilities+Equity below
   document.getElementById('balanceSheet').innerHTML = `
   <div class="report-wrap">
     <div class="report-header">
@@ -201,83 +190,54 @@ function renderBalanceSheet() {
       <div class="report-date">As on ${dateStr}</div>
     </div>
 
-    <div class="grid2" style="gap:40px">
-      <!-- LEFT: ASSETS -->
-      <div>
-        <table class="rep-table">
-          <tr class="sec-head"><td colspan="2">Assets:</td></tr>
+    <!-- ASSETS -->
+    <table class="rep-table" style="margin-bottom:20px">
+      <tr class="sec-head"><td colspan="2">Assets:</td></tr>
+      <tr><td class="particulars indent">Cash on Hand</td><td class="amount">৳${fmt(cash.onHand)}</td></tr>
+      <tr><td class="particulars indent">Accounts Receivable</td><td class="amount">৳${fmt(arNet)}</td></tr>
+      <tr><td class="particulars indent">Stock / Inventory</td><td class="amount">৳${fmt(stockVal)}</td></tr>
+      ${manualAssets.map(a=>`<tr><td class="particulars indent">${a.name}</td><td class="amount">৳${fmt(a.balance)}</td></tr>`).join('')}
+      <tr class="grand-total">
+        <td class="particulars">Total Assets</td>
+        <td class="amount" style="color:var(--success)">৳${fmt(totalAssets)}</td>
+      </tr>
+    </table>
 
-          <!-- Auto assets -->
-          <tr><td class="particulars indent">Cash</td>
-              <td class="amount">৳${fmt(cash.onHand)}</td></tr>
-          <tr><td class="particulars indent">Accounts Receivable</td>
-              <td class="amount">৳${fmt(arNet)}</td></tr>
-          <tr><td class="particulars indent">Stock / Inventory</td>
-              <td class="amount">৳${fmt(stockVal)}</td></tr>
+    <!-- LIABILITIES -->
+    <table class="rep-table" style="margin-bottom:20px">
+      <tr class="sec-head"><td colspan="2">Liabilities:</td></tr>
+      <tr><td class="particulars indent">Accounts Payable</td><td class="amount">৳${fmt(apNet)}</td></tr>
+      ${manualLiab.map(l=>`<tr><td class="particulars indent">${l.name}</td><td class="amount">৳${fmt(l.balance)}</td></tr>`).join('')}
+      <tr class="sub-total">
+        <td class="particulars" style="font-weight:700">Total Liabilities</td>
+        <td class="amount" style="font-weight:800;color:var(--danger)">৳${fmt(totalLiab)}</td>
+      </tr>
+    </table>
 
-          <!-- Manual assets -->
-          ${manualAssets.map(a =>
-            `<tr><td class="particulars indent">${a.name}</td><td class="amount">৳${fmt(a.balance)}</td></tr>`
-          ).join('')}
+    <!-- EQUITY -->
+    <table class="rep-table" style="margin-bottom:14px">
+      <tr class="sec-head"><td colspan="2">Equity:</td></tr>
+      ${manualEquity.map(e=>`<tr><td class="particulars indent">${e.name}</td><td class="amount">৳${fmt(e.balance)}</td></tr>`).join('')}
+      <tr><td class="particulars indent">Net Income (Retained)</td>
+          <td class="amount" style="color:${netIncome>=0?'var(--success)':'var(--danger)'}">৳${fmt(netIncome)}</td></tr>
+      <tr class="sub-total">
+        <td class="particulars" style="font-weight:700">Total Equity</td>
+        <td class="amount" style="font-weight:800;color:var(--success)">৳${fmt(totalEquity)}</td>
+      </tr>
+      <tr class="grand-total">
+        <td class="particulars">Total Liabilities and Equity</td>
+        <td class="amount" style="color:var(--accent)">৳${fmt(totalLiabEquity)}</td>
+      </tr>
+    </table>
 
-          <!-- Total -->
-          <tr class="grand-total">
-            <td class="particulars">Total Assets</td>
-            <td class="amount" style="color:var(--success)">৳${fmt(totalAssets)}</td>
-          </tr>
-        </table>
-      </div>
-
-      <!-- RIGHT: LIABILITIES & EQUITY -->
-      <div>
-        <table class="rep-table">
-          <tr class="sec-head"><td colspan="2">Liabilities and Equity:</td></tr>
-
-          <!-- Liabilities -->
-          <tr><td class="particulars indent" style="color:var(--text2);font-size:12px;font-weight:600;padding-top:4px">Liabilities</td><td></td></tr>
-          <tr><td class="particulars indent" style="padding-left:28px">Accounts Payable</td>
-              <td class="amount">৳${fmt(apNet)}</td></tr>
-          ${manualLiab.map(l =>
-            `<tr><td class="particulars indent" style="padding-left:28px">${l.name}</td><td class="amount">৳${fmt(l.balance)}</td></tr>`
-          ).join('')}
-          <tr class="sub-total">
-            <td class="particulars indent" style="font-weight:600">Total Liabilities</td>
-            <td class="amount" style="font-weight:700;color:var(--danger)">৳${fmt(totalLiab)}</td>
-          </tr>
-
-          <tr><td colspan="2" style="padding:8px 0"></td></tr>
-
-          <!-- Equity -->
-          <tr><td class="particulars indent" style="color:var(--text2);font-size:12px;font-weight:600;padding-top:4px">Equity</td><td></td></tr>
-          ${manualEquity.map(e =>
-            `<tr><td class="particulars indent" style="padding-left:28px">${e.name}</td><td class="amount">৳${fmt(e.balance)}</td></tr>`
-          ).join('')}
-          <tr><td class="particulars indent" style="padding-left:28px">Net Income (Retained)</td>
-              <td class="amount" style="color:${netIncome>=0?'var(--success)':'var(--danger)'}">৳${fmt(netIncome)}</td></tr>
-          <tr class="sub-total">
-            <td class="particulars indent" style="font-weight:600">Total Equity</td>
-            <td class="amount" style="font-weight:700;color:var(--success)">৳${fmt(totalEquity)}</td>
-          </tr>
-
-          <tr><td colspan="2" style="padding:6px 0"></td></tr>
-
-          <!-- Total Liab + Equity -->
-          <tr class="grand-total">
-            <td class="particulars">Total Liabilities and Equity</td>
-            <td class="amount" style="color:var(--accent)">৳${fmt(totalLiabEquity)}</td>
-          </tr>
-        </table>
-
-        <!-- Balance check -->
-        <div style="margin-top:14px;padding:10px 14px;border-radius:8px;font-size:13px;
-          background:${Math.abs(totalAssets-totalLiabEquity)<1?'#f0fdf4':'#fff1f2'};
-          border:1px solid ${Math.abs(totalAssets-totalLiabEquity)<1?'#bbf7d0':'#fecdd3'};
-          color:${Math.abs(totalAssets-totalLiabEquity)<1?'var(--success)':'var(--danger)'}">
-          ${Math.abs(totalAssets-totalLiabEquity)<1
-            ? '✅ Balance Sheet is balanced (Assets = Liabilities + Equity)'
-            : '⚠️ Balance Sheet is not balanced. Difference: ৳'+fmt(Math.abs(totalAssets-totalLiabEquity))+'. Check Balance Sheet Items page.'}
-        </div>
-      </div>
+    <!-- BALANCE CHECK -->
+    <div style="padding:10px 14px;border-radius:8px;font-size:13px;
+      background:${balanced?'#f0fdf4':'#fff1f2'};
+      border:1px solid ${balanced?'#bbf7d0':'#fecdd3'};
+      color:${balanced?'var(--success)':'var(--danger)'}">
+      ${balanced
+        ? '✅ Balance Sheet is balanced (Assets = Liabilities + Equity)'
+        : '⚠️ Balance Sheet is not balanced. Difference: ৳'+fmt(Math.abs(totalAssets-totalLiabEquity))+'. Check Balance Sheet Items page.'}
     </div>
   </div>`;
 }
@@ -287,12 +247,10 @@ function renderBalanceSheet() {
   await loadDB();
   const hash = location.hash;
   buildSidebar(hash==='#balance'?'balance':'income');
-  // Default: current month
   const d = new Date(); d.setDate(1);
   document.getElementById('incFrom').value = d.toISOString().split('T')[0];
   document.getElementById('incTo').value = today();
   renderIncomeStatement();
-  // Check hash
   if (hash === '#balance') {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));

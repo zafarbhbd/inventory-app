@@ -12,7 +12,6 @@
 <body>
 <div id="sidebar-root"></div>
 <div class="main">
-
   <div class="pg-header">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div>
@@ -22,20 +21,12 @@
       <a href="statements.html"><button class="btn btn-primary">📃 View Statements</button></a>
     </div>
   </div>
-
-  <!-- STAT CARDS -->
   <div class="cards-grid cards-4" id="dashCards"></div>
-
-  <!-- ALERTS -->
   <div id="dashAlerts"></div>
-
-  <!-- BALANCE CHART -->
   <div class="bal-chart-wrap" id="balChartWrap">
     <div class="bal-chart-title">⚖️ Balance Ledger Overview — Active Entries by Party</div>
     <div id="balanceChart"></div>
   </div>
-
-  <!-- BOTTOM GRID -->
   <div class="grid2">
     <div class="tbox">
       <div class="tbox-hdr"><span class="tbox-title">🏆 Top Customers by Sales</span></div>
@@ -48,7 +39,6 @@
       <tbody id="topProdTable"></tbody></table>
     </div>
   </div>
-
   <div class="grid2">
     <div class="tbox">
       <div class="tbox-hdr"><span class="tbox-title">🛎️ Recent Service Revenue</span></div>
@@ -61,12 +51,8 @@
       <tbody id="recentExpTable"></tbody></table>
     </div>
   </div>
-
 </div>
-
-<!-- TOAST -->
 <div class="toast hidden" id="toast"><span id="toastIcon">✅</span> <span id="toastMsg"></span></div>
-
 <script src="firebase-config.js"></script>
 <script src="db.js"></script>
 <script src="sidebar.js"></script>
@@ -85,7 +71,9 @@
   const totExp = (DB.opExpenses||[]).reduce((a,b)=>a+Number(b.amount),0);
   const inv    = getInvMap();
   const totStock = Object.values(inv).reduce((a,b)=>a+b.stockAmt,0);
-  const totalRev = totSa + totSvc;
+
+  // FIX: Net Income = (Sales + Service + Stock) - (Purchases + OpExpenses)
+  const totalRev = totSa + totSvc + totStock;
   const totalExp = totPu + totExp;
   const netIncome = totalRev - totalExp;
   const cash   = getCashSummary();
@@ -100,7 +88,6 @@
     <div class="card bl-warn"><div class="card-lbl">Total Purchase</div><div class="card-val warn">৳${fmt(totPu)}</div><div class="card-sub">All purchase transactions</div></div>
     <div class="card bl-purple"><div class="card-lbl">Op. Expenses</div><div class="card-val purple">৳${fmt(totExp)}</div><div class="card-sub">Rent, Salary, Utility etc.</div></div>`;
 
-  // Alerts
   const vMap={};
   (DB.vendors||[]).forEach(v=>vMap[v.hsn]=v.phone);
   const low=Object.entries(inv).filter(([,i])=>i.stock<=5&&i.purchased>0);
@@ -113,8 +100,7 @@
     </div>`;
   }
 
-  // Balance chart
-  const { partyMap, netBalance, totalOwe, totalOwed } = getBalanceSummary();
+  const { partyMap, netBalance } = getBalanceSummary();
   const entries=Object.entries(partyMap).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,8);
   const chart=document.getElementById('balanceChart');
   if(!entries.length){
@@ -135,7 +121,6 @@
         ${netBalance>=0?'Receivable':'Payable'} ৳${fmt(Math.abs(netBalance))}</span></div>`;
   }
 
-  // Top customers
   const cTot={};
   (DB.sales||[]).forEach(s=>{cTot[s.customer]=(cTot[s.customer]||0)+Number(s.amount);});
   const topC=Object.entries(cTot).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -143,7 +128,6 @@
     ?topC.map(([n,a],i)=>`<tr><td>${i+1}. ${n}</td><td><b>৳${fmt(a)}</b></td></tr>`).join('')
     :'<tr class="empty-row"><td colspan="2">No sales yet</td></tr>';
 
-  // Top products
   const pTot={};
   (DB.sales||[]).forEach(s=>{pTot[s.product]=(pTot[s.product]||0)+Number(s.units);});
   const topP=Object.entries(pTot).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -151,13 +135,11 @@
     ?topP.map(([n,u],i)=>`<tr><td>${i+1}. ${n}</td><td><b>${u}</b></td></tr>`).join('')
     :'<tr class="empty-row"><td colspan="2">No sales yet</td></tr>';
 
-  // Recent service revenue
   const svc=[...(DB.serviceRevenue||[])].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
   document.getElementById('recentSvcTable').innerHTML=svc.length
     ?svc.map(s=>`<tr><td>${s.date}</td><td>${s.name}</td><td><b>৳${fmt(s.amount)}</b></td></tr>`).join('')
     :'<tr class="empty-row"><td colspan="3">No service revenue yet</td></tr>';
 
-  // Recent expenses
   const exp=[...(DB.opExpenses||[])].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
   document.getElementById('recentExpTable').innerHTML=exp.length
     ?exp.map(e=>`<tr><td>${e.date}</td><td>${e.name}</td><td><span class="pill pill-purple">${e.category}</span></td><td><b>৳${fmt(e.amount)}</b></td></tr>`).join('')
