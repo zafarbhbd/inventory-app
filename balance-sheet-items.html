@@ -172,25 +172,26 @@ function saveItem(){
     const payType=document.getElementById('itemPayType').value;
     o.payType=payType;
     if(payType==='cash'){
-      // Deduct from cash book
-      DB.cash.push({id:uid(),type:'out',category:'Asset Purchase',date,amount:balance,
+      // Deduct from cash book only
+      const cashId=uid();
+      o.cashId=cashId;
+      DB.cash.push({id:cashId,type:'out',category:'Asset Purchase',date,amount:balance,
         note:`Cash paid for asset: ${o.name}`});
     } else {
-      // Add to accounts payable via AP payments tracking
+      // Later payment — add to assetLiabilities for AP tracking only
+      // Does NOT go into DB.purchases — keeps inventory and COGS clean
       const vendorName=document.getElementById('itemVendorName').value.trim()||o.name+' Supplier';
       o.vendorName=vendorName;
-      // Add to apPayments as a liability entry — negative (they owe)
-      // We add it as a credit purchase to AP
-      DB.apPayments.push({id:uid(),vendorName,amount:0,date,
-        note:`Asset credit purchase: ${o.name} (to be paid)`});
-      // Add vendor to vendors list if not exists for AP tracking
-      if(!DB.vendors.find(v=>v.name===vendorName)){
-        DB.vendors.push({id:uid(),hsn:'',product:o.name,name:vendorName,phone:'',address:''});
-      }
-      // Record as a credit purchase in purchases for AP balance
-      DB.purchases.push({id:uid(),hsn:'',product:o.name,vendor:vendorName,date,
-        units:1,cost:balance,amount:balance,paid:'credit',
-        note:`Asset credit purchase: ${o.name}`});
+      const alId=uid();
+      o.assetLiabilityId=alId;
+      DB.assetLiabilities.push({
+        id:alId,
+        assetName:o.name,
+        vendorName,
+        balance,
+        date,
+        note:`Credit purchase of asset: ${o.name}`
+      });
     }
   }
 
@@ -207,10 +208,17 @@ function saveItem(){
   saveDB();closeModal('itemModal');renderAll();showToast('Saved');
 }
 
-// FIX: delete now correctly updates DB arrays
+// FIX: delete correctly updates DB arrays and cleans up linked entries
 function delItem(type,id){
   confirmDelete('Delete this item?',()=>{
-    if(type==='asset')      DB.assets      = DB.assets.filter(x=>x.id!==id);
+    if(type==='asset'){
+      const rec=DB.assets.find(x=>x.id===id);
+      // Remove linked cash entry if cash payment
+      if(rec&&rec.cashId) DB.cash=DB.cash.filter(e=>e.id!==rec.cashId);
+      // Remove linked asset liability if later payment
+      if(rec&&rec.assetLiabilityId) DB.assetLiabilities=DB.assetLiabilities.filter(e=>e.id!==rec.assetLiabilityId);
+      DB.assets=DB.assets.filter(x=>x.id!==id);
+    }
     if(type==='liability')  DB.liabilities = DB.liabilities.filter(x=>x.id!==id);
     if(type==='equity')     DB.equity      = DB.equity.filter(x=>x.id!==id);
     saveDB();renderAll();showToast('Deleted');
@@ -271,13 +279,7 @@ function renderLiabilities(){
 }
 
 function renderEquity(){
-  const totSa=(DB.sales||[]).reduce((a,b)=>a+Number(b.amount),0);
-  const totSvc=(DB.serviceRevenue||[]).reduce((a,b)=>a+Number(b.amount),0);
-  const totPu=(DB.purchases||[]).reduce((a,b)=>a+Number(b.amount),0);
-  const totExp=(DB.opExpenses||[]).reduce((a,b)=>a+Number(b.amount),0);
-  const inv=getInvMap();
-  const stockVal=Object.values(inv).reduce((a,b)=>a+b.stockAmt,0);
-  const netIncome=(totSa+totSvc+stockVal)-(totPu+totExp);
+  const { netIncome } = calcNetIncome('', '');
   const manual=DB.equity||[];
   const manualTotal=manual.reduce((a,b)=>a+Number(b.balance),0);
   const total=netIncome+manualTotal;

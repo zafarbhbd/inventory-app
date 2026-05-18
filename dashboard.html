@@ -65,27 +65,23 @@
   document.getElementById('dashDate').textContent =
     new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
-  const totPu  = (DB.purchases||[]).reduce((a,b)=>a+Number(b.amount),0);
-  const totSa  = (DB.sales||[]).reduce((a,b)=>a+Number(b.amount),0);
-  const totSvc = (DB.serviceRevenue||[]).reduce((a,b)=>a+Number(b.amount),0);
-  const totExp = (DB.opExpenses||[]).reduce((a,b)=>a+Number(b.amount),0);
-  const inv    = getInvMap();
-  const totStock = Object.values(inv).reduce((a,b)=>a+b.stockAmt,0);
+  // Use shared calcNetIncome (all time) for consistent net income
+  const { totSales, totSvc, totRev, cogs, grossProfit, totOpExp, netIncome } = calcNetIncome('', '');
 
-  // FIX: Net Income = (Sales + Service + Stock) - (Purchases + OpExpenses)
-  const totalRev = totSa + totSvc + totStock;
-  const totalExp = totPu + totExp;
-  const netIncome = totalRev - totalExp;
-  const cash   = getCashSummary();
+  const totPu    = (DB.purchases||[]).reduce((a,b)=>a+Number(b.amount),0);
+  const totExp   = (DB.opExpenses||[]).reduce((a,b)=>a+Number(b.amount),0);
+  const inv      = getInvMap();
+  const totStock = Object.values(inv).reduce((a,b)=>a+b.stockAmt,0);
+  const cash     = getCashSummary();
 
   document.getElementById('dashCards').innerHTML = `
-    <div class="card bl-blue"><div class="card-lbl">Total Sales Revenue</div><div class="card-val blue">৳${fmt(totSa)}</div><div class="card-sub">All sales transactions</div></div>
+    <div class="card bl-blue"><div class="card-lbl">Total Sales Revenue</div><div class="card-val blue">৳${fmt(totSales)}</div><div class="card-sub">All sales transactions</div></div>
     <div class="card bl-teal"><div class="card-lbl">Service Revenue</div><div class="card-val teal">৳${fmt(totSvc)}</div><div class="card-sub">All service income</div></div>
-    <div class="card bl-red"><div class="card-lbl">Total Expenses</div><div class="card-val red">৳${fmt(totalExp)}</div><div class="card-sub">Purchase + Op. Expenses</div></div>
+    <div class="card bl-warn"><div class="card-lbl">COGS</div><div class="card-val warn">৳${fmt(cogs)}</div><div class="card-sub">Purchases − Closing Stock</div></div>
     <div class="card bl-${netIncome>=0?'green':'red'}"><div class="card-lbl">Net Income</div><div class="card-val ${netIncome>=0?'green':'red'}">৳${fmt(netIncome)}</div><div class="card-sub">${netIncome>=0?'Profit':'Loss'}</div></div>
-    <div class="card bl-blue"><div class="card-lbl">Stock Value</div><div class="card-val blue">৳${fmt(totStock)}</div><div class="card-sub">Current inventory</div></div>
+    <div class="card bl-blue"><div class="card-lbl">Closing Stock Value</div><div class="card-val blue">৳${fmt(totStock)}</div><div class="card-sub">Current inventory at cost</div></div>
     <div class="card bl-${cash.onHand>=0?'teal':'red'}"><div class="card-lbl">Cash on Hand</div><div class="card-val ${cash.onHand>=0?'teal':'red'}">৳${fmt(cash.onHand)}</div><div class="card-sub">In: ৳${fmt(cash.totalIn)} · Out: ৳${fmt(cash.totalOut)}</div></div>
-    <div class="card bl-warn"><div class="card-lbl">Total Purchase</div><div class="card-val warn">৳${fmt(totPu)}</div><div class="card-sub">All purchase transactions</div></div>
+    <div class="card bl-red"><div class="card-lbl">Total Purchases</div><div class="card-val red">৳${fmt(totPu)}</div><div class="card-sub">All purchase transactions</div></div>
     <div class="card bl-purple"><div class="card-lbl">Op. Expenses</div><div class="card-val purple">৳${fmt(totExp)}</div><div class="card-sub">Rent, Salary, Utility etc.</div></div>`;
 
   const vMap={};
