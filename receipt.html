@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cash Memo — Students Point</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Inter',sans-serif; background:#f0f2f5; display:flex; flex-direction:column; align-items:center; padding:20px; }
+
+  .receipt-controls {
+    display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; justify-content:center;
+  }
+  .ctrl-btn {
+    padding:9px 22px; border-radius:8px; border:none; font-family:'Inter',sans-serif;
+    font-size:13px; font-weight:700; cursor:pointer;
+  }
+  .ctrl-print { background:#2563eb; color:#fff; }
+  .ctrl-close { background:#f1f5f9; color:#334155; border:1.5px solid #e2e8f0; }
+
+  /* ── THE RECEIPT ── */
+  .receipt {
+    width:100%; max-width:420px; background:#fff;
+    border:2px solid #1e3a8a; border-radius:4px;
+    font-size:13px; color:#0f172a;
+  }
+
+  /* HEADER */
+  .receipt-header {
+    background:#1e3a8a; color:#fff;
+    padding:16px 18px 12px;
+    text-align:center;
+    position:relative;
+  }
+  .receipt-top-label {
+    display:inline-block; background:#fff; color:#1e3a8a;
+    font-size:11px; font-weight:800; letter-spacing:2px;
+    padding:2px 14px; border-radius:20px; margin-bottom:10px;
+    text-transform:uppercase;
+  }
+  .receipt-shop-name {
+    font-size:26px; font-weight:900; letter-spacing:1px;
+    text-transform:uppercase; line-height:1.1;
+  }
+  .receipt-tagline {
+    font-size:11px; color:#bfdbfe; margin-top:3px; font-weight:400;
+  }
+  .receipt-contact {
+    margin-top:10px; display:flex; flex-direction:column; gap:3px; align-items:center;
+  }
+  .receipt-contact-row {
+    display:flex; align-items:center; gap:6px; font-size:12px; color:#e0f2fe;
+  }
+  .receipt-contact-icon { font-size:13px; }
+
+  /* META ROW */
+  .receipt-meta {
+    display:grid; grid-template-columns:1fr 1fr;
+    border-bottom:1.5px solid #1e3a8a;
+  }
+  .meta-cell {
+    padding:7px 12px; border-right:1px solid #1e3a8a; font-size:12px;
+  }
+  .meta-cell:last-child { border-right:none; }
+  .meta-lbl { font-weight:700; color:#1e3a8a; font-size:11px; text-transform:uppercase; }
+  .meta-val { font-weight:600; margin-top:1px; }
+
+  /* CUSTOMER ROW */
+  .cust-row {
+    display:grid; padding:6px 12px;
+    border-bottom:1px solid #1e3a8a; font-size:12px;
+    grid-template-columns:auto 1fr;
+    gap:8px; align-items:center;
+  }
+  .cust-lbl { font-weight:700; color:#1e3a8a; font-size:11px; text-transform:uppercase; white-space:nowrap; }
+
+  .addr-row {
+    display:grid; grid-template-columns:1fr auto;
+    padding:6px 12px; border-bottom:1.5px solid #1e3a8a; font-size:12px; gap:8px;
+  }
+
+  /* ITEMS TABLE */
+  .items-table { width:100%; border-collapse:collapse; }
+  .items-table th {
+    background:#1e3a8a; color:#fff; font-size:11px; font-weight:700;
+    padding:7px 8px; text-align:center; border-right:1px solid #3b5fc0;
+    letter-spacing:.3px;
+  }
+  .items-table th:last-child { border-right:none; }
+  .items-table td {
+    padding:7px 8px; border-bottom:1px solid #e2e8f0;
+    border-right:1px solid #e2e8f0; font-size:12px; vertical-align:middle;
+  }
+  .items-table td:last-child { border-right:none; text-align:right; }
+  .items-table td:nth-child(1) { text-align:center; width:30px; }
+  .items-table td:nth-child(3) { text-align:center; }
+  .items-table td:nth-child(4) { text-align:right; }
+  .items-table .empty-rows td { height:26px; }
+
+  /* TOTALS */
+  .totals-section { border-top:1.5px solid #1e3a8a; }
+  .total-row {
+    display:grid; grid-template-columns:1fr auto;
+    padding:5px 12px; border-bottom:1px solid #e2e8f0; font-size:12px;
+  }
+  .total-row .t-lbl {
+    background:#1e3a8a; color:#fff; font-weight:700; font-size:11px;
+    padding:3px 10px; border-radius:3px; display:inline-block; letter-spacing:.3px;
+  }
+  .total-row .t-val { font-weight:700; text-align:right; align-self:center; }
+  .total-row.grand .t-val { font-size:14px; color:#1e3a8a; }
+
+  /* IN WORDS */
+  .words-row {
+    padding:7px 12px; border-top:1.5px solid #1e3a8a;
+    font-size:11px; color:#334155;
+    border-bottom:1.5px solid #1e3a8a;
+  }
+  .words-lbl { font-weight:700; color:#1e3a8a; font-size:10px; text-transform:uppercase; }
+
+  /* SIGNATURES */
+  .sig-row {
+    display:grid; grid-template-columns:1fr 1fr;
+    padding:14px 18px 10px;
+  }
+  .sig-cell { text-align:center; font-size:11px; color:#334155; }
+  .sig-line { border-top:1px solid #334155; margin-bottom:5px; padding-top:4px; font-weight:600; }
+
+  /* PRINT */
+  @media print {
+    body { background:#fff; padding:0; }
+    .receipt-controls { display:none; }
+    .receipt { border:1.5px solid #1e3a8a; max-width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="receipt-controls">
+  <button class="ctrl-btn ctrl-print" onclick="window.print()">🖨️ Print Receipt</button>
+  <button class="ctrl-btn ctrl-close" onclick="window.close()">✕ Close</button>
+</div>
+
+<div class="receipt" id="receiptBox">
+
+  <!-- HEADER -->
+  <div class="receipt-header">
+    <div class="receipt-top-label">Cash Memo</div>
+    <div class="receipt-shop-name">Students' Point</div>
+    <div class="receipt-tagline">Accounting &amp; Inventory Management</div>
+    <div class="receipt-contact">
+      <div class="receipt-contact-row">
+        <span class="receipt-contact-icon">📞</span>
+        <span>01707184868</span>
+      </div>
+      <div class="receipt-contact-row">
+        <span class="receipt-contact-icon">✉️</span>
+        <span>studentspoint2026@gmail.com</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- META: Serial No + Date -->
+  <div class="receipt-meta">
+    <div class="meta-cell">
+      <div class="meta-lbl">ক্র. নং (Serial No)</div>
+      <div class="meta-val" id="rSerial">—</div>
+    </div>
+    <div class="meta-cell">
+      <div class="meta-lbl">তারিখ (Date)</div>
+      <div class="meta-val" id="rDate">—</div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER NAME -->
+  <div class="cust-row">
+    <div class="cust-lbl">নাম (Name)</div>
+    <div id="rName" style="font-weight:600">—</div>
+  </div>
+
+  <!-- ADDRESS + MOBILE -->
+  <div class="addr-row">
+    <div>
+      <div style="font-size:10px;font-weight:700;color:#1e3a8a;text-transform:uppercase">ঠিকান (Address)</div>
+      <div id="rAddress" style="font-weight:500;margin-top:1px">—</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:10px;font-weight:700;color:#1e3a8a;text-transform:uppercase">মোবা (Mobile)</div>
+      <div id="rMobile" style="font-weight:500;margin-top:1px">—</div>
+    </div>
+  </div>
+
+  <!-- ITEMS TABLE -->
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th>নং</th>
+        <th>বিবরণ (Description)</th>
+        <th>পরিমান (Qty)</th>
+        <th>দর (Rate)</th>
+        <th>টাকা (Amount)</th>
+      </tr>
+    </thead>
+    <tbody id="rItems"></tbody>
+  </table>
+
+  <!-- TOTALS -->
+  <div class="totals-section">
+    <div class="total-row">
+      <span class="t-lbl">মোট মূল্য (Total)</span>
+      <span class="t-val" id="rTotal">৳0</span>
+    </div>
+    <div class="total-row">
+      <span class="t-lbl">জমা (Paid)</span>
+      <span class="t-val" id="rPaid">৳0</span>
+    </div>
+    <div class="total-row grand">
+      <span class="t-lbl">বাকি (Due)</span>
+      <span class="t-val" id="rDue">৳0</span>
+    </div>
+  </div>
+
+  <!-- AMOUNT IN WORDS -->
+  <div class="words-row">
+    <span class="words-lbl">কথায় (In Words): </span>
+    <span id="rWords">—</span>
+  </div>
+
+  <!-- SIGNATURES -->
+  <div class="sig-row">
+    <div class="sig-cell">
+      <div class="sig-line">ক্রেতার স্বাক্ষর</div>
+      <div>Buyer's Signature</div>
+    </div>
+    <div class="sig-cell">
+      <div class="sig-line">বিক্রেতার স্বাক্ষর</div>
+      <div>Seller's Signature</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── NUMBER TO WORDS ──────────────────────────
+function numberToWords(num) {
+  const n = Math.floor(num);
+  if(n===0) return 'Zero Taka Only';
+  const ones=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine',
+    'Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen',
+    'Seventeen','Eighteen','Nineteen'];
+  const tens=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function convert(n){
+    if(n<20) return ones[n];
+    if(n<100) return tens[Math.floor(n/10)]+(n%10?' '+ones[n%10]:'');
+    if(n<1000) return ones[Math.floor(n/100)]+' Hundred'+(n%100?' '+convert(n%100):'');
+    if(n<100000) return convert(Math.floor(n/1000))+' Thousand'+(n%1000?' '+convert(n%1000):'');
+    if(n<10000000) return convert(Math.floor(n/100000))+' Lakh'+(n%100000?' '+convert(n%100000):'');
+    return convert(Math.floor(n/10000000))+' Crore'+(n%10000000?' '+convert(n%10000000):'');
+  }
+  const paisa = Math.round((num - n)*100);
+  return convert(n)+' Taka'+(paisa>0?' and '+convert(paisa)+' Paisa':'')+' Only';
+}
+
+// ── LOAD RECEIPT DATA ────────────────────────
+window.onload = function() {
+  const raw = sessionStorage.getItem('receiptData');
+  if(!raw){
+    document.getElementById('receiptBox').innerHTML =
+      '<div style="padding:40px;text-align:center;color:#dc2626;font-size:14px">No receipt data found.<br>Please open this page from the Sales entry.</div>';
+    return;
+  }
+  const { sale, cust, receiptNo } = JSON.parse(raw);
+
+  document.getElementById('rSerial').textContent = receiptNo;
+  document.getElementById('rDate').textContent   = sale.date || '—';
+  document.getElementById('rName').textContent   = cust.name || sale.customer || '—';
+  document.getElementById('rAddress').textContent = cust.address || '—';
+  document.getElementById('rMobile').textContent  = cust.phone || '—';
+
+  // Items — single product sale
+  const totalRows = 8; // keep 8 rows for blank lines
+  let rows = `<tr>
+    <td>1</td>
+    <td style="text-align:left"><b>${sale.product}</b></td>
+    <td>${sale.units}</td>
+    <td style="text-align:right">৳${Number(sale.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+    <td>৳${Number(sale.amount).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+  </tr>`;
+  // Fill remaining blank rows
+  for(let i=2; i<=totalRows; i++){
+    rows += `<tr class="empty-rows"><td></td><td></td><td></td><td></td><td></td></tr>`;
+  }
+  document.getElementById('rItems').innerHTML = rows;
+
+  const total  = Number(sale.amount);
+  const paid   = sale.paid === 'paid' ? total : 0;
+  const due    = total - paid;
+
+  const fmt2 = n => Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('rTotal').textContent = '৳' + fmt2(total);
+  document.getElementById('rPaid').textContent  = '৳' + fmt2(paid);
+  document.getElementById('rDue').textContent   = '৳' + fmt2(due);
+  document.getElementById('rWords').textContent = numberToWords(total);
+};
+</script>
+</body>
+</html>

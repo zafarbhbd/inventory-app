@@ -78,6 +78,10 @@ const SEED = {
   liabilities: [],
   equity:      [],
   ledger: [],
+  // Service revenue credit tracking — later payment goes here for AR
+  serviceARItems: [],
+  // Operating expense credit tracking — later payment goes here for AP
+  opExpenseAPItems: [],
   cash: [
     // Seed cash entries matching seed purchases (cash out)
     { id:'seed-c1',  type:'out', category:'Purchase', date:'2024-01-01', amount:4000,    note:'Purchase: Mouse'            },
@@ -145,7 +149,8 @@ window.loadDB = async () => {
       window.DB = snap.data();
       // Migrations for missing keys
       const keys = ['ledger','cash','serviceRevenue','opExpenses','arPayments','apPayments',
-                    'assets','liabilities','equity','assetLiabilities'];
+                    'assets','liabilities','equity','assetLiabilities',
+                    'serviceARItems','opExpenseAPItems'];
       keys.forEach(k => { if (!window.DB[k]) window.DB[k] = []; });
       window.DB.purchases.forEach(p => { if (!p.paid) p.paid='paid'; });
       window.DB.sales.forEach(s => { if (!s.paid) s.paid='paid'; });
@@ -161,7 +166,8 @@ window.loadDB = async () => {
     const local = localStorage.getItem('spLocal');
     window.DB = local ? JSON.parse(local) : JSON.parse(JSON.stringify(SEED));
     const keys = ['ledger','cash','serviceRevenue','opExpenses','arPayments','apPayments',
-                  'assets','liabilities','equity','assetLiabilities'];
+                  'assets','liabilities','equity','assetLiabilities',
+                  'serviceARItems','opExpenseAPItems'];
     keys.forEach(k => { if (!window.DB[k]) window.DB[k]=[]; });
     _migrateSeedCashIds();
   }
@@ -331,42 +337,50 @@ window.getARSummary = () => {
   (window.DB.customers||[]).forEach(c => {
     custMap[c.custId] = { name:c.name, custId:c.custId, balance:0, paid:0 };
   });
+  // Credit sales
   (window.DB.sales||[]).filter(s=>s.paid==='credit').forEach(s => {
     if(custMap[s.custId]) custMap[s.custId].balance += Number(s.amount);
+  });
+  // Service revenue — later payment (AR)
+  (window.DB.serviceARItems||[]).forEach(s => {
+    if(!custMap[s.custId]) custMap[s.custId]={ name:s.customerName||s.custId, custId:s.custId, balance:0, paid:0 };
+    custMap[s.custId].balance += Number(s.amount);
   });
   (window.DB.arPayments||[]).forEach(p => {
     if(custMap[p.custId]) custMap[p.custId].paid += Number(p.amount);
   });
   Object.values(custMap).forEach(c => { c.netBalance = c.balance - c.paid; });
-  // Only return customers with activity
   return Object.fromEntries(Object.entries(custMap).filter(([,c])=>c.balance>0||c.paid>0));
 };
 
 // ─── ACCOUNTS PAYABLE SUMMARY ────────────────
-// Includes vendor credit purchases AND asset credit purchases
 window.getAPSummary = () => {
   const vendMap = {};
-  // Seed from vendors list
   (window.DB.vendors||[]).forEach(v => {
     if(!vendMap[v.name]) vendMap[v.name] = { name:v.name, balance:0, paid:0 };
   });
-  // Credit purchases from inventory transactions
+  // Credit inventory purchases
   (window.DB.purchases||[]).filter(p=>p.paid==='credit').forEach(p => {
     if(!vendMap[p.vendor]) vendMap[p.vendor]={ name:p.vendor, balance:0, paid:0 };
     vendMap[p.vendor].balance += Number(p.amount);
   });
-  // Asset credit purchases (stored separately, not in purchases)
+  // Asset credit purchases
   (window.DB.assetLiabilities||[]).forEach(a => {
     const vname = a.vendorName||'Unknown Supplier';
     if(!vendMap[vname]) vendMap[vname]={ name:vname, balance:0, paid:0 };
     vendMap[vname].balance += Number(a.balance);
   });
-  // AP payments settle both types
+  // Operating expense credit items
+  (window.DB.opExpenseAPItems||[]).forEach(e => {
+    const vname = e.payeeName||'Unknown Payee';
+    if(!vendMap[vname]) vendMap[vname]={ name:vname, balance:0, paid:0 };
+    vendMap[vname].balance += Number(e.amount);
+  });
+  // AP payments settle all types
   (window.DB.apPayments||[]).forEach(p => {
     if(vendMap[p.vendorName]) vendMap[p.vendorName].paid += Number(p.amount);
   });
   Object.values(vendMap).forEach(v => { v.netBalance = v.balance - v.paid; });
-  // Only return vendors with activity
   return Object.fromEntries(Object.entries(vendMap).filter(([,v])=>v.balance>0||v.paid>0));
 };
 

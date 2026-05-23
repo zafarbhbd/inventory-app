@@ -49,26 +49,26 @@
 
   <!-- SERVICE REVENUE -->
   <div class="tab-panel" id="tab-service">
-    <div class="info-box">🛎️ <b>Service Revenue</b> — Record any income earned from services (repair, consulting, installation, etc.) rather than product sales. This will be included in the Income Statement as revenue.</div>
+    <div class="info-box">🛎️ <b>Service Revenue</b> — Record income earned from services. Cash payment goes to Cash Book. Later payment goes to Accounts Receivable.</div>
     <div class="toolbar">
       <input class="search-input" placeholder="🔍 Search service revenue…" oninput="renderService(this.value)">
       <button class="btn btn-primary" onclick="openModal('serviceModal')">＋ Add Service Revenue</button>
     </div>
     <div class="tbox"><table>
-      <thead><tr><th>ID</th><th>Date</th><th>Service Name</th><th>Description</th><th>Amount (৳)</th><th>Actions</th></tr></thead>
+      <thead><tr><th>ID</th><th>Date</th><th>Service Name</th><th>Description</th><th>Amount (৳)</th><th>Payment</th><th>Actions</th></tr></thead>
       <tbody id="serviceTable"></tbody>
     </table></div>
   </div>
 
   <!-- OPERATING EXPENSES -->
   <div class="tab-panel" id="tab-opex">
-    <div class="info-box">💸 <b>Operating Expenses</b> — Record all business expenses (rent, salary, utility, etc.). These will appear under Expenses in the Income Statement.</div>
+    <div class="info-box">💸 <b>Operating Expenses</b> — Record all business expenses. Cash payment goes to Cash Book. Later payment goes to Accounts Payable.</div>
     <div class="toolbar">
       <input class="search-input" placeholder="🔍 Search expenses…" oninput="renderOpex(this.value)">
       <button class="btn btn-primary" onclick="openModal('opexModal')">＋ Add Expense</button>
     </div>
     <div class="tbox"><table>
-      <thead><tr><th>ID</th><th>Date</th><th>Expense Name</th><th>Category</th><th>Amount (৳)</th><th>Actions</th></tr></thead>
+      <thead><tr><th>ID</th><th>Date</th><th>Expense Name</th><th>Category</th><th>Amount (৳)</th><th>Payment</th><th>Actions</th></tr></thead>
       <tbody id="opexTable"></tbody>
     </table></div>
   </div>
@@ -155,7 +155,19 @@
       <div class="form-row"><label class="form-lbl">Date</label><input class="form-input" id="svcDate" type="date"></div>
     </div>
     <div class="form-row"><label class="form-lbl">Description (optional)</label><input class="form-input" id="svcDesc" placeholder="e.g. Fixed motherboard for Ram Sales"></div>
-    <div class="form-row"><label class="form-lbl">Amount (৳)</label><input class="form-input" id="svcAmount" type="number" min="0" placeholder="0"></div>
+    <div class="grid2f">
+      <div class="form-row"><label class="form-lbl">Amount (৳)</label><input class="form-input" id="svcAmount" type="number" min="0" placeholder="0"></div>
+      <div class="form-row"><label class="form-lbl">Payment Type</label>
+        <select class="form-select" id="svcPayType" onchange="toggleSvcCustomer()">
+          <option value="cash">💵 Cash Payment (received now)</option>
+          <option value="later">📥 Later Payment (Accounts Receivable)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row" id="svcCustomerRow" style="display:none">
+      <label class="form-lbl">Customer</label>
+      <select class="form-select" id="svcCustomer"><option value="">Select Customer</option></select>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('serviceModal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveService()">Save</button>
@@ -170,7 +182,7 @@
     <div class="modal-sub">Record a business expense</div>
     <input type="hidden" id="editOpexId">
     <div class="grid2f">
-      <div class="form-row"><label class="form-lbl">Expense Name</label><input class="form-input" id="opName" placeholder="e.g. Office Rent"></div>
+      <div class="form-row"><label class="form-lbl">Expense Name</label><input class="form-input" id="opName" placeholder="e.g. March Office Rent"></div>
       <div class="form-row"><label class="form-lbl">Date</label><input class="form-input" id="opDate" type="date"></div>
     </div>
     <div class="grid2f">
@@ -183,6 +195,16 @@
         </select>
       </div>
       <div class="form-row"><label class="form-lbl">Amount (৳)</label><input class="form-input" id="opAmount" type="number" min="0" placeholder="0"></div>
+    </div>
+    <div class="form-row"><label class="form-lbl">Payment Type</label>
+      <select class="form-select" id="opPayType" onchange="toggleOpPayee()">
+        <option value="cash">💵 Cash Payment (paid now)</option>
+        <option value="later">📤 Later Payment (Accounts Payable)</option>
+      </select>
+    </div>
+    <div class="form-row" id="opPayeeRow" style="display:none">
+      <label class="form-lbl">Payee Name (vendor / landlord / person)</label>
+      <input class="form-input" id="opPayeeName" placeholder="e.g. City Properties Ltd">
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('opexModal')">Cancel</button>
@@ -221,15 +243,30 @@ function openModal(id){
     document.getElementById('editServiceId').value='';
     ['svcName','svcDesc','svcAmount'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('svcDate').value=today();
+    document.getElementById('svcPayType').value='cash';
+    document.getElementById('svcCustomerRow').style.display='none';
+    const custOpts='<option value="">Select Customer</option>'+(DB.customers||[]).map(c=>`<option value="${c.custId}">${c.custId} — ${c.name}</option>`).join('');
+    document.getElementById('svcCustomer').innerHTML=custOpts;
   }
   if(id==='opexModal'){
     document.getElementById('opexModalTitle').textContent='Add Operating Expense';
     document.getElementById('editOpexId').value='';
-    ['opName','opAmount'].forEach(i=>document.getElementById(i).value='');
+    ['opName','opAmount','opPayeeName'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('opDate').value=today();
     document.getElementById('opCategory').value='Rent Expense';
+    document.getElementById('opPayType').value='cash';
+    document.getElementById('opPayeeRow').style.display='none';
   }
   document.getElementById(id).classList.add('open');
+}
+
+function toggleSvcCustomer(){
+  document.getElementById('svcCustomerRow').style.display =
+    document.getElementById('svcPayType').value==='later'?'block':'none';
+}
+function toggleOpPayee(){
+  document.getElementById('opPayeeRow').style.display =
+    document.getElementById('opPayType').value==='later'?'block':'none';
 }
 function openPurchaseModal(){
   document.getElementById('purchaseModalTitle').textContent='New Purchase Entry';
@@ -344,6 +381,7 @@ function renderSales(q=''){
         <td>${s.units}</td><td>৳${fmt(s.price)}</td><td><b>৳${fmt(s.amount)}</b></td>
         <td><span class="pill ${s.paid==='paid'?'pill-green':'pill-yellow'}">${s.paid==='paid'?'Paid':'Credit'}</span></td>
         <td><div class="act-btns">
+          <button class="btn btn-success btn-sm" onclick="printReceipt('${s.id}')" title="Print Receipt">🧾</button>
           <button class="btn btn-blue btn-sm" onclick='editSale(${JSON.stringify(s)})'>✏️</button>
           <button class="btn btn-danger btn-sm" onclick="delSale('${s.id}')">🗑️</button>
         </div></td></tr>`).join('')
@@ -400,37 +438,67 @@ function renderService(q=''){
         <td><span class="pill pill-teal">SV${String(i+1).padStart(3,'0')}</span></td>
         <td>${s.date}</td><td><b>${s.name}</b></td><td>${s.description||'—'}</td>
         <td><b>৳${fmt(s.amount)}</b></td>
+        <td><span class="pill ${s.payType==='later'?'pill-yellow':'pill-green'}">${s.payType==='later'?'📥 AR':'💵 Cash'}</span></td>
         <td><div class="act-btns">
           <button class="btn btn-blue btn-sm" onclick='editService(${JSON.stringify(s)})'>✏️</button>
           <button class="btn btn-danger btn-sm" onclick="delService('${s.id}')">🗑️</button>
         </div></td></tr>`).join('')
-    :'<tr class="empty-row"><td colspan="6">No service revenue yet</td></tr>')
-    +(list.length?`<tr class="tfoot-row"><td colspan="4"><b>Total Service Revenue</b></td><td colspan="2"><b>৳${fmt(total)}</b></td></tr>`:'');
+    :'<tr class="empty-row"><td colspan="7">No service revenue yet</td></tr>')
+    +(list.length?`<tr class="tfoot-row"><td colspan="5"><b>Total Service Revenue</b></td><td colspan="2"><b>৳${fmt(total)}</b></td></tr>`:'');
 }
 function editService(s){
   document.getElementById('serviceModalTitle').textContent='Edit Service Revenue';
   document.getElementById('editServiceId').value=s.id;
-  document.getElementById('svcName').value=s.name;document.getElementById('svcDate').value=s.date;
-  document.getElementById('svcDesc').value=s.description||'';document.getElementById('svcAmount').value=s.amount;
+  document.getElementById('svcName').value=s.name;
+  document.getElementById('svcDate').value=s.date;
+  document.getElementById('svcDesc').value=s.description||'';
+  document.getElementById('svcAmount').value=s.amount;
+  document.getElementById('svcPayType').value=s.payType||'cash';
+  const custOpts='<option value="">Select Customer</option>'+(DB.customers||[]).map(c=>`<option value="${c.custId}">${c.custId} — ${c.name}</option>`).join('');
+  document.getElementById('svcCustomer').innerHTML=custOpts;
+  document.getElementById('svcCustomer').value=s.custId||'';
+  document.getElementById('svcCustomerRow').style.display=s.payType==='later'?'block':'none';
   document.getElementById('serviceModal').classList.add('open');
 }
 function saveService(){
   const id=document.getElementById('editServiceId').value;
-  const o={name:document.getElementById('svcName').value.trim(),date:document.getElementById('svcDate').value,
-    description:document.getElementById('svcDesc').value.trim(),amount:Number(document.getElementById('svcAmount').value)};
+  const payType=document.getElementById('svcPayType').value;
+  const custId=payType==='later'?document.getElementById('svcCustomer').value:'';
+  const cust=DB.customers.find(c=>c.custId===custId);
+  const o={
+    name:document.getElementById('svcName').value.trim(),
+    date:document.getElementById('svcDate').value,
+    description:document.getElementById('svcDesc').value.trim(),
+    amount:Number(document.getElementById('svcAmount').value),
+    payType,
+    custId:custId||null,
+    customerName:cust?cust.name:null
+  };
   if(!o.name||!o.amount||!o.date){showToast('Fill all fields','err');return;}
-  if(id){const i=DB.serviceRevenue.findIndex(s=>s.id===id);DB.serviceRevenue[i]={...DB.serviceRevenue[i],...o};}
-  else{
+  if(payType==='later'&&!custId){showToast('Select a customer for later payment','err');return;}
+  if(id){
+    const i=DB.serviceRevenue.findIndex(s=>s.id===id);
+    DB.serviceRevenue[i]={...DB.serviceRevenue[i],...o};
+  } else {
     const newId=uid();
     const cashId=uid();
     DB.serviceRevenue.push({id:newId,...o,cashId});
-    DB.cash.push({id:cashId,type:'in',category:'Service Revenue',date:o.date,amount:o.amount,note:o.name});
+    if(payType==='cash'){
+      // Cash payment — goes to cash book
+      DB.cash.push({id:cashId,type:'in',category:'Service Revenue',date:o.date,amount:o.amount,note:o.name});
+    } else {
+      // Later payment — goes to AR tracking
+      DB.serviceARItems.push({id:uid(),serviceId:newId,custId,customerName:cust?cust.name:custId,
+        amount:o.amount,date:o.date,note:o.name});
+    }
   }
   saveDB();closeModal('serviceModal');renderService();showToast('Service revenue saved');
 }
 function delService(id){confirmDelete('Delete this service entry?',()=>{
   const rec=DB.serviceRevenue.find(s=>s.id===id);
   if(rec&&rec.cashId) DB.cash=DB.cash.filter(e=>e.id!==rec.cashId);
+  // Remove linked AR item if later payment
+  DB.serviceARItems=DB.serviceARItems.filter(e=>e.serviceId!==id);
   DB.serviceRevenue=DB.serviceRevenue.filter(s=>s.id!==id);
   saveDB();renderService();showToast('Deleted');
 });}
@@ -447,40 +515,77 @@ function renderOpex(q=''){
         <td>${e.date}</td><td><b>${e.name}</b></td>
         <td><span class="pill ${catColor[e.category]||'pill-gray'}">${e.category}</span></td>
         <td><b>৳${fmt(e.amount)}</b></td>
+        <td><span class="pill ${e.payType==='later'?'pill-yellow':'pill-green'}">${e.payType==='later'?'📤 AP':'💵 Cash'}</span></td>
         <td><div class="act-btns">
           <button class="btn btn-blue btn-sm" onclick='editOpex(${JSON.stringify(e)})'>✏️</button>
           <button class="btn btn-danger btn-sm" onclick="delOpex('${e.id}')">🗑️</button>
         </div></td></tr>`).join('')
-    :'<tr class="empty-row"><td colspan="6">No expenses yet</td></tr>')
-    +(list.length?`<tr class="tfoot-row"><td colspan="4"><b>Total Operating Expenses</b></td><td colspan="2"><b>৳${fmt(total)}</b></td></tr>`:'');
+    :'<tr class="empty-row"><td colspan="7">No expenses yet</td></tr>')
+    +(list.length?`<tr class="tfoot-row"><td colspan="4"><b>Total Operating Expenses</b></td><td colspan="3"><b>৳${fmt(total)}</b></td></tr>`:'');
 }
 function editOpex(e){
   document.getElementById('opexModalTitle').textContent='Edit Expense';
   document.getElementById('editOpexId').value=e.id;
-  document.getElementById('opName').value=e.name;document.getElementById('opDate').value=e.date;
-  document.getElementById('opCategory').value=e.category;document.getElementById('opAmount').value=e.amount;
+  document.getElementById('opName').value=e.name;
+  document.getElementById('opDate').value=e.date;
+  document.getElementById('opCategory').value=e.category;
+  document.getElementById('opAmount').value=e.amount;
+  document.getElementById('opPayType').value=e.payType||'cash';
+  document.getElementById('opPayeeName').value=e.payeeName||'';
+  document.getElementById('opPayeeRow').style.display=e.payType==='later'?'block':'none';
   document.getElementById('opexModal').classList.add('open');
 }
 function saveOpex(){
   const id=document.getElementById('editOpexId').value;
-  const o={name:document.getElementById('opName').value.trim(),date:document.getElementById('opDate').value,
-    category:document.getElementById('opCategory').value,amount:Number(document.getElementById('opAmount').value)};
+  const payType=document.getElementById('opPayType').value;
+  const payeeName=document.getElementById('opPayeeName').value.trim();
+  const o={
+    name:document.getElementById('opName').value.trim(),
+    date:document.getElementById('opDate').value,
+    category:document.getElementById('opCategory').value,
+    amount:Number(document.getElementById('opAmount').value),
+    payType,
+    payeeName:payType==='later'?payeeName:null
+  };
   if(!o.name||!o.amount||!o.date){showToast('Fill all fields','err');return;}
-  if(id){const i=DB.opExpenses.findIndex(e=>e.id===id);DB.opExpenses[i]={...DB.opExpenses[i],...o};}
-  else{
+  if(payType==='later'&&!payeeName){showToast('Enter payee name for later payment','err');return;}
+  if(id){
+    const i=DB.opExpenses.findIndex(e=>e.id===id);
+    DB.opExpenses[i]={...DB.opExpenses[i],...o};
+  } else {
     const newId=uid();
     const cashId=uid();
     DB.opExpenses.push({id:newId,...o,cashId});
-    DB.cash.push({id:cashId,type:'out',category:o.category,date:o.date,amount:o.amount,note:o.name});
+    if(payType==='cash'){
+      // Cash payment — goes to cash book
+      DB.cash.push({id:cashId,type:'out',category:o.category,date:o.date,amount:o.amount,note:o.name});
+    } else {
+      // Later payment — goes to AP tracking
+      DB.opExpenseAPItems.push({id:uid(),expenseId:newId,payeeName,
+        amount:o.amount,date:o.date,category:o.category,note:o.name});
+    }
   }
   saveDB();closeModal('opexModal');renderOpex();showToast('Expense saved');
 }
 function delOpex(id){confirmDelete('Delete this expense?',()=>{
   const rec=DB.opExpenses.find(e=>e.id===id);
   if(rec&&rec.cashId) DB.cash=DB.cash.filter(e=>e.id!==rec.cashId);
+  // Remove linked AP item if later payment
+  DB.opExpenseAPItems=DB.opExpenseAPItems.filter(e=>e.expenseId!==id);
   DB.opExpenses=DB.opExpenses.filter(e=>e.id!==id);
   saveDB();renderOpex();showToast('Deleted');
 });}
+
+// ─── RECEIPT PRINT ────────────────────────────
+function printReceipt(saleId){
+  const sale = DB.sales.find(s=>s.id===saleId);
+  if(!sale){ showToast('Sale not found','err'); return; }
+  const cust = DB.customers.find(c=>c.custId===sale.custId)||{};
+  const receiptNo = String(DB.sales.indexOf(sale)+1).padStart(6,'0');
+  // Store data in sessionStorage for receipt page to read
+  sessionStorage.setItem('receiptData', JSON.stringify({sale, cust, receiptNo}));
+  window.open('receipt.html','_blank','width=600,height=800');
+}
 
 // Check hash on load to open correct tab
 (async()=>{
