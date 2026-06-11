@@ -92,10 +92,10 @@
 <div class="modal-overlay" id="apPayModal">
   <div class="modal">
     <div class="modal-title">Record Cash Payment Made</div>
-    <div class="modal-sub">Paying off a vendor credit balance</div>
+    <div class="modal-sub">Paying off a vendor, supplier or expense payable balance</div>
     <input type="hidden" id="editApPayId">
-    <div class="form-row"><label class="form-lbl">Vendor</label>
-      <select class="form-select" id="apPayVendor"><option value="">Select Vendor</option></select></div>
+    <div class="form-row"><label class="form-lbl">Payee (Vendor / Supplier / Expense Payee)</label>
+      <select class="form-select" id="apPayVendor"><option value="">Select Payee</option></select></div>
     <div class="grid2f">
       <div class="form-row"><label class="form-lbl">Amount (৳)</label><input class="form-input" id="apPayAmount" type="number" min="0" placeholder="0"></div>
       <div class="form-row"><label class="form-lbl">Date</label><input class="form-input" id="apPayDate" type="date"></div>
@@ -143,9 +143,17 @@ function openModal(id){
   }
   if(id==='apPayModal'){
     document.getElementById('editApPayId').value='';
-    const vNames=[...new Set((DB.vendors||[]).map(v=>v.name))];
-    const opts='<option value="">Select Vendor</option>'+vNames.map(n=>`<option value="${n}">${n}</option>`).join('');
-    document.getElementById('apPayVendor').innerHTML=opts;
+    // Build dropdown from ALL payees with outstanding balance > 0
+    // Sources: credit inventory purchases, asset liabilities, operating expense AP items
+    const apSummary = getAPSummary();
+    const outstandingPayees = Object.values(apSummary)
+      .filter(v => v.netBalance > 0)
+      .sort((a,b) => a.name.localeCompare(b.name));
+    const opts = '<option value="">Select Payee</option>' +
+      outstandingPayees.map(v =>
+        `<option value="${v.name}">${v.name} — Due: ৳${fmt(v.netBalance)}</option>`
+      ).join('');
+    document.getElementById('apPayVendor').innerHTML = opts;
     ['apPayAmount','apPayNote'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('apPayDate').value=today();
   }

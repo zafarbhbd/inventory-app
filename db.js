@@ -274,14 +274,32 @@ window.getInvMap = () => {
   return m;
 };
 
+// ─── STOCK VALUE AT A GIVEN DATE ─────────────
+// Calculates the stock value as it was at the END of a given date
+// Used to derive opening stock for any period
+window.getStockValueAt = (beforeDate) => {
+  const m = {};
+  (window.DB.products||[]).forEach(p => { m[p.hsn] = { cost:p.cost, units:0 }; });
+  // All purchases strictly before the period start date
+  (window.DB.purchases||[]).filter(p => !beforeDate || p.date < beforeDate).forEach(p => {
+    if(m[p.hsn]) m[p.hsn].units += Number(p.units);
+  });
+  // All sales strictly before the period start date
+  (window.DB.sales||[]).filter(s => !beforeDate || s.date < beforeDate).forEach(s => {
+    if(m[s.hsn]) m[s.hsn].units -= Number(s.units);
+  });
+  return Object.values(m).reduce((a,b) => a + Math.max(0, b.units) * b.cost, 0);
+};
+
 // ─── NET INCOME CALCULATOR (Standard — Option B) ────
 // Formula:
-//   Revenue  = Sales Revenue + Service Revenue
-//   COGS     = Opening Stock (0) + Purchases - Closing Stock
-//   Gross Profit = Revenue - COGS
-//   Net Income   = Gross Profit - Operating Expenses
-// Date filter applies to Sales, Purchases, Service, OpExpenses
-// Closing Stock is always current (all-time) — standard practice
+//   Revenue      = Sales Revenue + Service Revenue
+//   Opening Stock = Stock value at start of period (auto-calculated)
+//   COGS         = Opening Stock + Purchases (in period) − Closing Stock
+//   Gross Profit  = Revenue − COGS
+//   Net Income    = Gross Profit − Operating Expenses
+// When from='' (All Time): Opening Stock = 0, Closing Stock = current stock
+// When from is set: Opening Stock = stock value the day before period starts
 window.calcNetIncome = (from, to) => {
   const sales     = (window.DB.sales||[]).filter(s => inRange(s.date, from, to));
   const purchases = (window.DB.purchases||[]).filter(p => inRange(p.date, from, to));
@@ -292,17 +310,37 @@ window.calcNetIncome = (from, to) => {
   const totSvc    = svcRev.reduce((a,b) => a + Number(b.amount), 0);
   const totRev    = totSales + totSvc;
 
-  // COGS = Opening Stock + Purchases - Closing Stock
-  // Opening Stock = 0 (records start from beginning)
+  // Opening Stock — auto-calculated from all transactions before period start
+  // If no date filter (All Time), opening stock is 0
+  const openingStock = from ? getStockValueAt(from) : 0;
+
+  // Closing Stock — stock value at end of period
+  // If no end date filter, use current all-time stock
+  // If end date is set, calculate stock as of that date (inclusive)
+  let closingStock;
+  if (!to) {
+    // All time or no end date — use current stock
+    const inv = getInvMap();
+    closingStock = Object.values(inv).reduce((a,b) => a + b.stockAmt, 0);
+  } else {
+    // Calculate stock value up to and including the end date
+    const m = {};
+    (window.DB.products||[]).forEach(p => { m[p.hsn] = { cost:p.cost, units:0 }; });
+    (window.DB.purchases||[]).filter(p => p.date <= to).forEach(p => {
+      if(m[p.hsn]) m[p.hsn].units += Number(p.units);
+    });
+    (window.DB.sales||[]).filter(s => s.date <= to).forEach(s => {
+      if(m[s.hsn]) m[s.hsn].units -= Number(s.units);
+    });
+    closingStock = Object.values(m).reduce((a,b) => a + Math.max(0,b.units)*b.cost, 0);
+  }
+
   const totPurch  = purchases.reduce((a,b) => a + Number(b.amount), 0);
-  const inv       = getInvMap(); // always current closing stock
-  const closingStock = Object.values(inv).reduce((a,b) => a + b.stockAmt, 0);
-  const cogs      = totPurch - closingStock; // 0 + purchases - closing
+  // COGS = Opening Stock + Purchases − Closing Stock
+  const cogs = openingStock + totPurch - closingStock;
 
   const totOpExp  = opExp.reduce((a,b) => a + Number(b.amount), 0);
-  // Individual expense line items with name (not category)
-  const expLines  = opExp.map(e => ({ name: e.name, category: e.category, amount: Number(e.amount) }));
-  // Group by category for subtotals
+  const expLines  = opExp.map(e => ({ name:e.name, category:e.category, amount:Number(e.amount) }));
   const expCats   = {};
   opExp.forEach(e => { expCats[e.category] = (expCats[e.category]||0) + Number(e.amount); });
 
@@ -311,7 +349,7 @@ window.calcNetIncome = (from, to) => {
 
   return {
     totSales, totSvc, totRev,
-    totPurch, closingStock, cogs,
+    openingStock, totPurch, closingStock, cogs,
     grossProfit,
     totOpExp, expLines, expCats,
     netIncome

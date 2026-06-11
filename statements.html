@@ -85,7 +85,7 @@ function renderIncomeStatement() {
   const from = document.getElementById('incFrom').value;
   const to   = document.getElementById('incTo').value;
   const label = from && to ? `${from} to ${to}` : from ? `From ${from}` : to ? `Up to ${to}` : 'All Time';
-  const { totSales, totSvc, totRev, totPurch, closingStock, cogs,
+  const { totSales, totSvc, totRev, openingStock, totPurch, closingStock, cogs,
           grossProfit, totOpExp, expLines, netIncome } = calcNetIncome(from, to);
 
   document.getElementById('incomeStatement').innerHTML = `
@@ -113,7 +113,7 @@ function renderIncomeStatement() {
 
       <!-- COST OF GOODS SOLD -->
       <tr class="sec-head"><td colspan="3">Less: Cost of Goods Sold (COGS):</td></tr>
-      <tr><td class="particulars indent">Opening Stock</td><td class="amount">৳0</td><td></td></tr>
+      <tr><td class="particulars indent">Opening Stock</td><td class="amount">৳${fmt(openingStock)}</td><td></td></tr>
       <tr><td class="particulars indent">Add: Purchases</td><td class="amount">৳${fmt(totPurch)}</td><td></td></tr>
       <tr><td class="particulars indent">Less: Closing Stock</td><td class="amount">(৳${fmt(closingStock)})</td><td></td></tr>
       <tr class="sub-total">
